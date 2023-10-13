@@ -9,7 +9,7 @@ public class ClearCommand : InteractionModuleBase<SocketInteractionContext>
     [SlashCommand("clear", "Clears the chat")]
     [RequireUserPermission(GuildPermission.ManageMessages)]
     [RequireBotPermission(ChannelPermission.ManageMessages)]
-    [RequireContext(ContextType.Guild)]
+    [EnabledInDm(false)]
     [SuppressMessage("ReSharper", "PossibleMultipleEnumeration")]
     public async Task Clear([Summary("amount", "Amount of messages")] [MinValue(1)] [MaxValue(100)] int amount)
     {

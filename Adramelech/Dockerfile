@@ -1,17 +1,22 @@
 ﻿FROM mcr.microsoft.com/dotnet/runtime:7.0-alpine AS base
+WORKDIR /app
+EXPOSE 80
+EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:7.0-alpine AS build
 WORKDIR /src
-COPY ["ConsoleApp1/ConsoleApp1.csproj", "ConsoleApp1/"]
-RUN dotnet restore "ConsoleApp1/ConsoleApp1.csproj"
+
+COPY ["Adramelech/Adramelech.csproj", "Adramelech/"]
+RUN dotnet restore "Adramelech/Adramelech.csproj"
+
 COPY . .
-WORKDIR "/src/ConsoleApp1"
-RUN dotnet build "ConsoleApp1.csproj" -c Release -o /app/build
+WORKDIR "/src/Adramelech"
+RUN dotnet build "Adramelech.csproj" -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "ConsoleApp1.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "Adramelech.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "ConsoleApp1.dll"]
+ENTRYPOINT ["dotnet", "Adramelech.dll"]

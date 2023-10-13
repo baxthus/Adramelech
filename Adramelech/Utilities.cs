@@ -65,7 +65,7 @@ public static class Utilities
     {
         // Deal with normal scenarios
         if (value == null) return true;
-        if (object.Equals(value, default(T))) return true;
+        if (Equals(value, default(T))) return true;
 
         // Deal with non-null nullables
         var methodType = typeof(T);

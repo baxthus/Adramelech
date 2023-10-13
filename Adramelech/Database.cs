@@ -1,4 +1,5 @@
-﻿using MongoDB.Bson;
+﻿using System.Diagnostics.CodeAnalysis;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using Serilog;
@@ -8,7 +9,9 @@ namespace Adramelech;
 public static class Database
 {
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
-    // ReSharper disable once ClassNeverInstantiated.Local
+    [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
+    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public class ConfigSchema
     {
         public ObjectId Id { get; set; }
@@ -19,7 +22,7 @@ public static class Database
     
     private static MongoClient Client { get; set; } = null!;
     private static IMongoDatabase Db { get; set; } = null!;
-    public static IMongoCollection<ConfigSchema> Config { get; set; } = null!;
+    public static IMongoCollection<ConfigSchema> Config { get; private set; } = null!;
 
     public static void CreateConnection()
     {
@@ -45,8 +48,9 @@ public static class Database
             Environment.Exit(1);
         }
         
+        // Setup camelCase convention
         var camelCaseConvention = new ConventionPack {new CamelCaseElementNameConvention()};
-        ConventionRegistry.Register("camelCase", camelCaseConvention, t => true);
+        ConventionRegistry.Register("camelCase", camelCaseConvention, _ => true);
         
         Log.Debug("Opened database connection, Database: {Database}", Db.DatabaseNamespace.DatabaseName);
     }

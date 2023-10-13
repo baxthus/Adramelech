@@ -22,7 +22,6 @@ public class HelpCommand : InteractionModuleBase<SocketInteractionContext>
                                   """);
         commandsString.AppendLine("\n");
 
-        // Get the longest command name
         var alignment = commands.Max(x => x.Name.Length);
 
         foreach (var command in commands)

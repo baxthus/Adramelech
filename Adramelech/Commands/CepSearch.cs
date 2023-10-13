@@ -14,6 +14,7 @@ public class CepSearchCommand : InteractionModuleBase<SocketInteractionContext>
         if (response.IsInvalid())
         {
             await Context.ErrorResponse("Something went wrong while searching for the CEP");
+            return;
         }
 
         if (!response.Name.IsInvalid())
@@ -35,8 +36,8 @@ public class CepSearchCommand : InteractionModuleBase<SocketInteractionContext>
                         $"**Service:** `{response.Service}`";
 
         var locationField = $"**Type:** `{response.Location.Type}`\n" +
-                            $"**Latitude:** `{response.Location.Coordinates.Latitude ?? "N/A"}`\n" +
-                            $"**Longitude:** `{response.Location.Coordinates.Longitude ?? "N/A"}`";
+                            $"**Latitude:** `{response.Location.Coordinates.Latitude.OrElse("N/A")}`\n" +
+                            $"**Longitude:** `{response.Location.Coordinates.Longitude.OrElse("N/A")}`";
 
         var embed = new EmbedBuilder()
             .WithColor(Config.Bot.EmbedColor)
