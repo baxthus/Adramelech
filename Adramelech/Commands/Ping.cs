@@ -3,10 +3,10 @@ using Discord.Interactions;
 
 namespace Adramelech.Commands;
 
-public class PingCommand : InteractionModuleBase<SocketInteractionContext>
+public class Ping : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("ping", "Reply with Pong!")]
-    public async Task Ping()
+    public async Task PingAsync()
     {
         var embed = new EmbedBuilder()
             .WithColor(Config.Bot.EmbedColor)

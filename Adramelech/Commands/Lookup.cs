@@ -7,10 +7,10 @@ using Newtonsoft.Json;
 
 namespace Adramelech.Commands;
 
-public class LookupCommand : InteractionModuleBase<SocketInteractionContext>
+public class Lookup : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("lookup", "Look up a ip or domain")]
-    public async Task Lookup([Summary("local", "Address to lookup (ip or domain)")] string local)
+    public async Task LookupAsync([Summary("local", "Address to lookup (ip or domain)")] string local)
     {
         var ip = LookupCommandExtensions.IpRegex().Match(local).Success
             ? local
@@ -34,7 +34,7 @@ public class LookupCommand : InteractionModuleBase<SocketInteractionContext>
                         $"**Type:** {response.Type}";
 
         var locationField = $"**Continent:** {response.Continent}\n" +
-                            $"**Country:** {response.Country} :flag_{response.CountryCode.ToLower()}\n" +
+                            $"**Country:** {response.Country} :flag_{response.CountryCode.ToLower()}:\n" +
                             $"**Region:** {response.Region}\n" +
                             $"**City:** {response.City}\n" +
                             $"**Latitude:** {response.Latitude}\n" +
@@ -53,7 +53,7 @@ public class LookupCommand : InteractionModuleBase<SocketInteractionContext>
         var embed = new EmbedBuilder()
             .WithColor(Config.Bot.EmbedColor)
             .WithDescription("For the best results, search by IP")
-            .AddField(":zip: **Main**", mainField)
+            .AddField(":zap: **Main**", mainField)
             .AddField(":earth_americas: **Location**", locationField)
             .AddField(":satellite: **Connection**", connectionField)
             .AddField(":clock1: **Timezone**", timezoneField)
@@ -102,8 +102,8 @@ public class LookupCommand : InteractionModuleBase<SocketInteractionContext>
         [JsonProperty("country_code")] public string CountryCode { get; set; }
         public string Region { get; set; }
         public string City { get; set; }
-        public double Latitude { get; set; }
-        public double Longitude { get; set; }
+        public string Latitude { get; set; }
+        public string Longitude { get; set; }
         public string Postal { get; set; }
         public InternalConnection Connection { get; set; }
         public InternalTimezone Timezone { get; set; }

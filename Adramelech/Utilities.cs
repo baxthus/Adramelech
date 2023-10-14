@@ -2,6 +2,7 @@
 using Discord;
 using Discord.Interactions;
 using Newtonsoft.Json;
+using Serilog;
 
 namespace Adramelech;
 
@@ -18,7 +19,7 @@ public static class Utilities
                 .WithTitle("**Error!**")
                 .WithDescription(desc);
 
-        await ctx.Interaction.RespondAsync(embed: embed.Build());
+        await ctx.Interaction.RespondAsync(embed: embed.Build(), ephemeral: true);
     }
 
     // GET request
@@ -39,8 +40,8 @@ public static class Utilities
             : JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
     }
 
-    // POST request (T type can be set implicitly by the data parameter (recommended))
-    public static async Task<TF?> Request<TF, T>(string url, T data, string? userAgent = null)
+    // POST request
+    public static async Task<TF?> Request<T, TF>(string url, T data, string? userAgent = null)
     {
         using HttpClient client = new();
 
@@ -67,19 +68,31 @@ public static class Utilities
         if (value == null) return true;
         if (Equals(value, default(T))) return true;
 
-        // Deal with non-null nullables
         var methodType = typeof(T);
+
+        // Deal with empty strings
+        // If at the end the boolValue is true, the string is empty or has a whitespace
+        // I just implemented the whitespace check because the Github API returns a whitespace string sometimes
+        if (methodType == typeof(string))
+        {
+            var boolValue = string.IsNullOrEmpty(value as string);
+            
+            // Ugly ahh syntax
+            if (!boolValue)
+                boolValue = string.IsNullOrWhiteSpace(value as string);
+            
+            return boolValue;
+        }
+
+        // Deal with empty arrays
+        if (methodType.IsArray) return (value as Array)!.Length == 0;
+
+        // Deal with non-null nullables
         if (Nullable.GetUnderlyingType(methodType) != null) return false;
 
         // Deal with boxed value types
         var argumentType = value.GetType();
         if (!argumentType.IsValueType || argumentType == methodType) return false;
-
-        // Deal with empty strings
-        if (methodType == typeof(string)) return string.IsNullOrEmpty(value as string);
-        
-        // Deal with empty arrays
-        if (methodType.IsArray) return (value as Array)!.Length == 0;
 
         // Deal with wrapped types
         var obj = Activator.CreateInstance(value.GetType())!;

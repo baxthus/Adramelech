@@ -4,10 +4,10 @@ using Discord.Interactions;
 
 namespace Adramelech.Commands;
 
-public class DogCommand : InteractionModuleBase<SocketInteractionContext>
+public class Dog : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("dog", "Gets a random dog image")]
-    public async Task Dog()
+    public async Task DogAsync()
     {
         var response = await Utilities.Request<DogResponse>("https://dog.ceo/api/breeds/image/random");
         if (response.IsInvalid() || response.Status != "success")

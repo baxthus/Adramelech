@@ -3,10 +3,10 @@ using Discord.Interactions;
 
 namespace Adramelech.Commands;
 
-public class HelpCommand : InteractionModuleBase<SocketInteractionContext>
+public class Help : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("help", "Get help with the bot")]
-    public async Task Help()
+    public async Task HelpAsync()
     {
         var commands = await Context.Client.GetGlobalApplicationCommandsAsync();
 

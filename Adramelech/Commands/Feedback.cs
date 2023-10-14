@@ -3,10 +3,10 @@ using Discord;
 
 namespace Adramelech.Commands;
 
-public class FeedbackCommand : InteractionModuleBase<SocketInteractionContext>
+public class Feedback : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("feedback", "Send feedback to the developers")]
-    public async Task Feedback()
+    public async Task FeedbackAsync()
     {
         var modal = new ModalBuilder()
             .WithTitle("Feedback")

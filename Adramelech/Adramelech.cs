@@ -82,7 +82,7 @@ public class Adramelech
     {
         await _commands.RegisterCommandsGloballyAsync(true);
         
-        Log.Information($"Connected as {_client.CurrentUser}");
+        Log.Information($"Connected as {_client.CurrentUser.Username}#{_client.CurrentUser.Discriminator}");
         Log.Information("Activity: {Type} {Name}", _client.Activity.Type, _client.Activity.Name);
     }
 }

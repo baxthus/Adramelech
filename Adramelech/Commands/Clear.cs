@@ -4,14 +4,14 @@ using Discord.Interactions;
 
 namespace Adramelech.Commands;
 
-public class ClearCommand : InteractionModuleBase<SocketInteractionContext>
+public class Clear : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("clear", "Clears the chat")]
     [RequireUserPermission(GuildPermission.ManageMessages)]
     [RequireBotPermission(ChannelPermission.ManageMessages)]
     [EnabledInDm(false)]
     [SuppressMessage("ReSharper", "PossibleMultipleEnumeration")]
-    public async Task Clear([Summary("amount", "Amount of messages")] [MinValue(1)] [MaxValue(100)] int amount)
+    public async Task ClearAsync([Summary("amount", "Amount of messages")] [MinValue(1)] [MaxValue(100)] int amount)
     {
         var messages = await Context.Channel.GetMessagesAsync(amount).FlattenAsync();
         if (!messages.Any())
@@ -38,9 +38,16 @@ public class ClearCommand : InteractionModuleBase<SocketInteractionContext>
             .Build();
 
         await RespondAsync(embed: embed);
-        
+
         await Task.Delay(5000);
 
-        await DeleteOriginalResponseAsync();
+        try
+        {
+            await DeleteOriginalResponseAsync();
+        }
+        catch
+        {
+            // ignored
+        }
     }
 }

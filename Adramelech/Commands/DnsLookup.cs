@@ -4,10 +4,10 @@ using Discord.Interactions;
 
 namespace Adramelech.Commands;
 
-public class DnsLookupCommand : InteractionModuleBase<SocketInteractionContext>
+public class DnsLookup : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("dns-lookup", "Performs a DNS lookup on the given domain")]
-    public async Task DnsLookup([Summary("domain", "Domain to lookup")] string domain)
+    public async Task DnsLookupAsync([Summary("domain", "Domain to lookup")] string domain)
     {
         var response = await Utilities.Request<string>($"https://da.gd/dns/{domain}");
         if (response.IsInvalid())

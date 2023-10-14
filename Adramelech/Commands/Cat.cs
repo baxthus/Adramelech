@@ -4,10 +4,10 @@ using Discord.Interactions;
 
 namespace Adramelech.Commands;
 
-public class CatCommand : InteractionModuleBase<SocketInteractionContext>
+public class Cat : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("cat", "Get a random cat image")]
-    public async Task Cat()
+    public async Task CatAsync()
     {
         var response = await Utilities.Request<CatResponse>("https://cataas.com/cat?json=true");
         if (response.IsInvalid())

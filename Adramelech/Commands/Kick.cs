@@ -4,13 +4,13 @@ using Discord.WebSocket;
 
 namespace Adramelech.Commands;
 
-public class KickCommand : InteractionModuleBase<SocketInteractionContext>
+public class Kick : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("kick", "Kick a member")]
     [RequireUserPermission(GuildPermission.KickMembers)]
     [RequireBotPermission(GuildPermission.KickMembers)]
     [EnabledInDm(false)]
-    public async Task Kick([Summary("user", "Mention a user")] SocketGuildUser member,
+    public async Task KickAsync([Summary("user", "Mention a user")] SocketGuildUser member,
         [Summary("reason", "Reason for the kick")]
         string reason = "No reason provided",
         [Summary("prune_days", "Number of days to prune messages")] [MinValue(0)] [MaxValue(7)]

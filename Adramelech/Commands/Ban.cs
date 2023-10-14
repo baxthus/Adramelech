@@ -4,13 +4,13 @@ using Discord.WebSocket;
 
 namespace Adramelech.Commands;
 
-public class BanCommand : InteractionModuleBase<SocketInteractionContext>
+public class Ban : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("ban", "Ban a member")]
     [RequireUserPermission(GuildPermission.BanMembers)]
     [RequireBotPermission(GuildPermission.BanMembers)]
     [EnabledInDm(false)]
-    public async Task Ban([Summary("user", "Mention a user")] SocketGuildUser member,
+    public async Task BanAsync([Summary("user", "Mention a user")] SocketGuildUser member,
         [Summary("reason", "Reason for the ban")]
         string reason = "No reason provided",
         [Summary("prune_days", "Number of days to prune messages")] [MinValue(0)] [MaxValue(7)]

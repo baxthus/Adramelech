@@ -5,10 +5,10 @@ using Flurl;
 
 namespace Adramelech.Commands;
 
-public class CepSearchCommand : InteractionModuleBase<SocketInteractionContext>
+public class CepSearch : InteractionModuleBase<SocketInteractionContext>
 {
     [SlashCommand("cep", "Search for a CEP (Brazilian postal code)")]
-    public async Task CepSearch([Summary("cep", "CEP that you want to search")] string cep)
+    public async Task CepSearchAsync([Summary("cep", "CEP that you want to search")] string cep)
     {
         var response = await Utilities.Request<CepResponse>($"https://brasilapi.com.br/api/cep/v2/{cep}");
         if (response.IsInvalid())
@@ -47,17 +47,15 @@ public class CepSearchCommand : InteractionModuleBase<SocketInteractionContext>
             .WithFooter("Powered by brasilapi.com.br")
             .Build();
 
-        // If the coordinates are invalid, we don't need to add the button
-        if (response.Location.Coordinates.Latitude.IsInvalid() || response.Location.Coordinates.Longitude.IsInvalid())
-        {
-            await RespondAsync(embed: embed);
-            return;
-        }
-
         var mapsUrl = new Url("https://www.google.com")
             .AppendPathSegments("maps", "search", "/")
-            .SetQueryParam("api", 1)
-            .SetQueryParam("query",
+            .SetQueryParam("api", 1);
+
+        // If the coordinates are invalid, search for the street, city and state
+        if (response.Location.Coordinates.Latitude.IsInvalid() || response.Location.Coordinates.Longitude.IsInvalid())
+            mapsUrl.SetQueryParam("query", $"{response.Street}, {response.City}, {response.State}");
+        else
+            mapsUrl.SetQueryParam("query",
                 $"{response.Location.Coordinates.Latitude},{response.Location.Coordinates.Longitude}");
 
         var button = new ComponentBuilder()

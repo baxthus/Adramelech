@@ -7,18 +7,19 @@ using Newtonsoft.Json;
 namespace Adramelech.Commands;
 
 [Group("github", "Get Github related information")]
-public class GithubCommand : InteractionModuleBase<SocketInteractionContext>
+public class Github : InteractionModuleBase<SocketInteractionContext>
 {
     private const string BaseUrl = "https://api.github.com";
 
     [SlashCommand("repo", "Get information about a repository")]
-    public async Task RepoCommand([Summary("user", "Github user")] string user,
+    public async Task RepoAsync([Summary("user", "Github user")] string user,
         [Summary("repository", "Github repository")]
         string repository)
     {
         var response = await Utilities.Request<Repository>(new Url(BaseUrl)
-            .AppendPathSegments("repos", user, repository));
-        if (response.IsInvalid() || response.Message != null)
+                .AppendPathSegments("repos", user, repository),
+            Config.Bot.UserAgent);
+        if (response.IsInvalid())
         {
             await Context.ErrorResponse("Failed to get repository information");
             return;
@@ -33,15 +34,16 @@ public class GithubCommand : InteractionModuleBase<SocketInteractionContext>
                         $"**Watchers:** {response.WatchersCount}\n" +
                         $"**Forks:** {response.ForksCount}\n";
 
-        var ownerField = $"**Username:** {response.Owner.Login}" +
+        var ownerField = $"**Username:** {response.Owner.Login}\n" +
                          $"**ID:** {response.Owner.Id}\n" +
                          $"**Type:** {response.Owner.Type}\n";
 
         string licenseField;
-        if (!response.License.Key.IsInvalid())
+        if (!response.License.IsInvalid())
         {
             var license = await Utilities.Request<License>(new Url(BaseUrl)
-                .AppendPathSegments("licenses", response.License.Key));
+                    .AppendPathSegments("licenses", response.License?.Key),
+                Config.Bot.UserAgent);
             if (license.IsInvalid())
             {
                 await Context.ErrorResponse("Failed to get license information");
@@ -66,60 +68,65 @@ public class GithubCommand : InteractionModuleBase<SocketInteractionContext>
             .Build();
 
         var buttons = new ComponentBuilder()
-            .WithButton("Repository", response.HtmlUrl)
-            .WithButton("Owner", $"https://github.com/{response.Owner.Login}")
+            .WithButton("Repository", url: response.HtmlUrl, style: ButtonStyle.Link)
+            .WithButton("Owner", url: $"https://github.com/{response.Owner.Login}", style: ButtonStyle.Link)
             .Build();
 
         await RespondAsync(embed: embed, components: buttons);
     }
 
     [SlashCommand("user", "Get information about a user")]
-    public async Task UserCommand([Summary("user", "Github user")] string user)
+    public async Task UserAsync([Summary("user", "Github user")] string user)
     {
-        var response = await Utilities.Request<User>(new Url(BaseUrl).AppendPathSegments("users", user));
-        if (response.IsInvalid() || response.Message != null)
+        var response = await Utilities.Request<User>(new Url(BaseUrl).AppendPathSegments("users", user),
+            Config.Bot.UserAgent);
+        if (response.IsInvalid())
         {
             await Context.ErrorResponse("Failed to get user information");
             return;
         }
 
-        var message = $"**Username:** {response.Login}" +
-                      $"**ID:** {response.Id}\n" +
-                      $"**Type:** {response.Type}\n" +
-                      $"**Name:** {response.Name}\n" +
-                      $"**Company:** {response.Company.OrElse("No company")}\n" +
-                      $"**Website:** {response.Blog.OrElse("No website")}\n" +
-                      $"**Location:** {response.Location.OrElse("No location")}\n" +
-                      $"**Bio:** {response.Bio.OrElse("No bio")}\n" +
-                      $"**Twitter:** {response.TwitterUsername.OrElse("No twitter")}\n" +
-                      $"**Public Repos:** {response.PublicRepos}\n" +
-                      $"**Public Gists:** {response.PublicGists}\n" +
-                      $"**Followers:** {response.Followers}\n" +
-                      $"**Following:** {response.Following}\n";
+        var mainField = $"**Username:** {response.Login}\n" +
+                        $"**ID:** {response.Id}\n" +
+                        $"**Type:** {response.Type}\n" +
+                        $"**Name:** {response.Name.OrElse("N/A")}\n" +
+                        $"**Company:** {response.Company.OrElse("N/A")}\n" +
+                        $"**Website:** {response.Blog.OrElse("N/A")}\n" +
+                        $"**Location:** {response.Location.OrElse("N/A")}\n" +
+                        $"**Bio:** {response.Bio.OrElse("N/A")}\n" +
+                        $"**Twitter:** {response.TwitterUsername.OrElse("N/A")}";
+
+
+        var statsField = $"**Public Repos:** {response.PublicRepos}\n" +
+                         $"**Public Gists:** {response.PublicGists}\n" +
+                         $"**Followers:** {response.Followers}\n" +
+                         $"**Following:** {response.Following}";
 
         var embed = new EmbedBuilder()
             .WithColor(Config.Bot.EmbedColor)
             .WithTitle("__User Information__")
             .WithThumbnailUrl(response.AvatarUrl)
-            .AddField("\u200B", message)
+            .AddField(":zap: **Main**", mainField)
+            .AddField(":bar_chart: **Statistics**", statsField)
             .Build();
 
         var buttons = response.TwitterUsername.IsInvalid()
             ? new ComponentBuilder()
-                .WithButton("Github", response.HtmlUrl)
+                .WithButton("Github", url: response.HtmlUrl, style: ButtonStyle.Link)
                 .Build()
             : new ComponentBuilder()
-                .WithButton("Github", response.HtmlUrl)
-                .WithButton("Twitter", $"https://twitter.com/{response.TwitterUsername}")
+                .WithButton("Github", url: response.HtmlUrl, style: ButtonStyle.Link)
+                .WithButton("Twitter", url: $"https://twitter.com/{response.TwitterUsername}", style: ButtonStyle.Link)
                 .Build();
 
         await RespondAsync(embed: embed, components: buttons);
     }
 
     [SlashCommand("gist", "Get information about a gist")]
-    public async Task GistCommand([Summary("user", "Github user")] string user)
+    public async Task GistAsync([Summary("user", "Github user")] string user)
     {
-        var response = await Utilities.Request<Gist[]>(new Url(BaseUrl).AppendPathSegments("users", user, "gists"));
+        var response = await Utilities.Request<Gist[]>(new Url(BaseUrl).AppendPathSegments("users", user, "gists"),
+            Config.Bot.UserAgent);
         if (response.IsInvalid())
         {
             await Context.ErrorResponse("Failed to get gist information or user has no gists");
@@ -131,7 +138,7 @@ public class GithubCommand : InteractionModuleBase<SocketInteractionContext>
         var userField = $"**Username:** {content.Owner.Login}\n" +
                         $"**ID:** {content.Owner.Id}\n" +
                         $"**Type:** {content.Owner.Type}\n";
-        
+
         var latestGistField = $"**Description:** {content.Description.OrElse("No description")}\n" +
                               $"**ID:** {content.Id}\n" +
                               $"**Comments:** {content.Comments}\n";
@@ -146,11 +153,11 @@ public class GithubCommand : InteractionModuleBase<SocketInteractionContext>
             .Build();
 
         var buttons = new ComponentBuilder()
-            .WithButton("Open user Gists", $"https://gist.github.com/{user}")
-            .WithButton("Open user profile", content.Owner.HtmlUrl)
-            .WithButton("Open latest Gist", content.HtmlUrl)
+            .WithButton("Open user Gists", url: $"https://gist.github.com/{user}", style: ButtonStyle.Link)
+            .WithButton("Open user profile", url: content.Owner.HtmlUrl, style: ButtonStyle.Link)
+            .WithButton("Open latest Gist", url: content.HtmlUrl, style: ButtonStyle.Link)
             .Build();
-        
+
         await RespondAsync(embed: embed, components: buttons);
     }
 
@@ -159,7 +166,6 @@ public class GithubCommand : InteractionModuleBase<SocketInteractionContext>
     [SuppressMessage("ReSharper", "MemberHidesStaticFromOuterClass")]
     private struct Repository
     {
-        public string? Message { get; set; }
         public int Id { get; set; }
         public string Name { get; set; }
         [JsonProperty("html_url")] public string HtmlUrl { get; set; }
@@ -170,7 +176,7 @@ public class GithubCommand : InteractionModuleBase<SocketInteractionContext>
         [JsonProperty("watchers_count")] public int WatchersCount { get; set; }
         [JsonProperty("forks_count")] public int ForksCount { get; set; }
         public InternalOwner Owner { get; set; }
-        public InternalLicense License { get; set; }
+        public InternalLicense? License { get; set; }
 
         internal struct InternalOwner
         {
@@ -198,11 +204,10 @@ public class GithubCommand : InteractionModuleBase<SocketInteractionContext>
     [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
     private struct User
     {
-        public string? Message { get; set; }
         public string Login { get; set; }
         public int Id { get; set; }
         public string Type { get; set; }
-        public string Name { get; set; }
+        public string? Name { get; set; }
         public string? Company { get; set; }
         public string? Blog { get; set; }
         public string? Location { get; set; }

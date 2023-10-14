@@ -4,12 +4,12 @@ using Discord.Interactions;
 
 namespace Adramelech.Commands;
 
-public class CovidCommand : InteractionModuleBase<SocketInteractionContext>
+public class Covid : InteractionModuleBase<SocketInteractionContext>
 {
     private const string BaseUrl = "https://disease.sh/v3/covid-19";
 
     [SlashCommand("covid", "Get covid stats")]
-    public async Task Covid(
+    public async Task CovidAsync(
         [Summary("country", "Country to get stats from (can be 'worldwide')")]
         string country = "worldwide")
     {
