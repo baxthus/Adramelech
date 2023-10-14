@@ -1,4 +1,5 @@
-﻿using Discord;
+﻿using System.Diagnostics.CodeAnalysis;
+using Discord;
 using Discord.Interactions;
 
 namespace Adramelech.Commands;
@@ -24,6 +25,7 @@ public class NekoCommand : InteractionModuleBase<SocketInteractionContext>
         await RespondAsync(embed: embed);
     }
 
+    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
     private struct Neko
     {
         public string Url { get; set; }

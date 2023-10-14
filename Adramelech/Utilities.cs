@@ -2,7 +2,6 @@
 using Discord;
 using Discord.Interactions;
 using Newtonsoft.Json;
-using Serilog;
 
 namespace Adramelech;
 
@@ -22,6 +21,9 @@ public static class Utilities
         await ctx.Interaction.RespondAsync(embed: embed.Build(), ephemeral: true);
     }
 
+    public static string ToJson(this object obj) => JsonConvert.SerializeObject(obj);
+    public static T? FromJson<T>(this string json) => JsonConvert.DeserializeObject<T>(json);
+
     // GET request
     public static async Task<T?> Request<T>(string url, string? userAgent = null)
     {
@@ -34,10 +36,10 @@ public static class Utilities
         if (!response.IsSuccessStatusCode)
             return default;
 
+        var content = await response.Content.ReadAsStringAsync();
+
         // If T is string, return string
-        return typeof(T) == typeof(string)
-            ? (T)(object)await response.Content.ReadAsStringAsync()
-            : JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
+        return typeof(T) == typeof(string) ? (T)(object)content : content.FromJson<T>();
     }
 
     // POST request
@@ -48,18 +50,18 @@ public static class Utilities
         if (userAgent != null)
             client.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
 
-        using var content = typeof(TF) == typeof(string)
+        using var httpContent = typeof(TF) == typeof(string)
             ? new StringContent((string)(object)data!, Encoding.UTF8, "text/plain")
-            : new StringContent(JsonConvert.SerializeObject(data), Encoding.UTF8, "application/json");
+            : new StringContent(data!.ToJson(), Encoding.UTF8, "application/json");
 
-        var response = await client.PostAsync(url, content);
+        var response = await client.PostAsync(url, httpContent);
         if (!response.IsSuccessStatusCode)
             return default;
 
+        var content = await response.Content.ReadAsStringAsync();
+
         // If TF is string, return string
-        return typeof(TF) == typeof(string)
-            ? (TF)(object)await response.Content.ReadAsStringAsync()
-            : JsonConvert.DeserializeObject<TF>(await response.Content.ReadAsStringAsync());
+        return typeof(TF) == typeof(string) ? (TF)(object)content : content.FromJson<TF>();
     }
 
     public static bool IsInvalid<T>(this T value)
@@ -76,11 +78,11 @@ public static class Utilities
         if (methodType == typeof(string))
         {
             var boolValue = string.IsNullOrEmpty(value as string);
-            
+
             // Ugly ahh syntax
             if (!boolValue)
                 boolValue = string.IsNullOrWhiteSpace(value as string);
-            
+
             return boolValue;
         }
 

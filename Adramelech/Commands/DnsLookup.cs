@@ -22,7 +22,7 @@ public class DnsLookup : InteractionModuleBase<SocketInteractionContext>
             .AddField(":link: **Domain**", $"```{domain}```")
             .Build();
         
-        var file = new MemoryStream(Encoding.UTF8.GetBytes(response!));
+        using var file = new MemoryStream(Encoding.UTF8.GetBytes(response!));
 
         await RespondWithFileAsync(embed: embed, fileName: "domain.zone", fileStream: file);
     }

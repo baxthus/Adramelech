@@ -44,6 +44,7 @@ public class Obfuscate : InteractionModuleBase<SocketInteractionContext>
             .AddField(":wrench: **Method**", $"```{response.Method}```")
             .AddField(":information_source: **Removed the metadata?**", $"```{removedMetadata}```")
             .AddField(":clock1: **Created at**", $"<t:{createdAt.ToUnixTimeSeconds()}>")
+            .WithFooter("Powered by owo.vc")
             .Build();
 
         await RespondAsync(embed: embed);
