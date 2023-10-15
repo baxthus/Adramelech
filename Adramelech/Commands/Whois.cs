@@ -1,10 +1,11 @@
 ﻿using System.Text;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 
 namespace Adramelech.Commands;
 
-public class Whois : InteractionModuleBase<SocketInteractionContext>
+public class Whois : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     [SlashCommand("whois", "Get information about a domain or IP address")]
     public async Task WhoisAsync([Summary("target", "The domain or IP address to get information about")] string target)

@@ -1,9 +1,10 @@
 ﻿using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 
 namespace Adramelech.Commands;
 
-public class Server : InteractionModuleBase<SocketInteractionContext>
+public class Server : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     [SlashCommand("server", "Get server info")]
     [RequireContext(ContextType.Guild)]

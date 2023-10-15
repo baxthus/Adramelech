@@ -1,10 +1,11 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 
 namespace Adramelech.Commands;
 
-public class Clear : InteractionModuleBase<SocketInteractionContext>
+public class Clear : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     [SlashCommand("clear", "Clears the chat")]
     [RequireUserPermission(GuildPermission.ManageMessages)]

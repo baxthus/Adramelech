@@ -1,10 +1,11 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 
 namespace Adramelech.Commands;
 
-public class Dog : InteractionModuleBase<SocketInteractionContext>
+public class Dog : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     [SlashCommand("dog", "Gets a random dog image")]
     public async Task DogAsync()

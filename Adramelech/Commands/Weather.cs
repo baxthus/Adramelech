@@ -1,12 +1,13 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using Flurl;
 using Newtonsoft.Json;
 
 namespace Adramelech.Commands;
 
-public class Weather : InteractionModuleBase<SocketInteractionContext>
+public class Weather : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     private const string OpenWeatherUrl = "https://api.openweathermap.org";
     

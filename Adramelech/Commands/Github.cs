@@ -1,13 +1,14 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Discord.Interactions;
 using Discord;
+using Discord.WebSocket;
 using Flurl;
 using Newtonsoft.Json;
 
 namespace Adramelech.Commands;
 
 [Group("github", "Get Github related information")]
-public class Github : InteractionModuleBase<SocketInteractionContext>
+public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     private const string BaseUrl = "https://api.github.com";
 

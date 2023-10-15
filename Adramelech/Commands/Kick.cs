@@ -4,7 +4,7 @@ using Discord.WebSocket;
 
 namespace Adramelech.Commands;
 
-public class Kick : InteractionModuleBase<SocketInteractionContext>
+public class Kick : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     [SlashCommand("kick", "Kick a member")]
     [RequireUserPermission(GuildPermission.KickMembers)]

@@ -1,10 +1,11 @@
 ﻿using System.Text;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 
 namespace Adramelech.Commands;
 
-public class DnsLookup : InteractionModuleBase<SocketInteractionContext>
+public class DnsLookup : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     [SlashCommand("dns-lookup", "Performs a DNS lookup on the given domain")]
     public async Task DnsLookupAsync([Summary("domain", "Domain to lookup")] string domain)

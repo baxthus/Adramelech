@@ -4,7 +4,7 @@ using Discord.WebSocket;
 
 namespace Adramelech.Commands;
 
-public class Avatar : InteractionModuleBase<SocketInteractionContext>
+public class Avatar : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     [SlashCommand("avatar", "Get the avatar of a user")]
     public async Task AvatarAsync([Summary("user", "Mention a user")] SocketUser? user = null)

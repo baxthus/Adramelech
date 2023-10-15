@@ -1,10 +1,11 @@
 ﻿using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using Flurl;
 
 namespace Adramelech.Commands;
 
-public class Short : InteractionModuleBase<SocketInteractionContext>
+public class Short : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     [SlashCommand("short", "Shorten a URL")]
     public async Task ShortAsync([Summary("url", "The URL to shorten")] string url)

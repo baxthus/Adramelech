@@ -4,7 +4,7 @@ using Discord.WebSocket;
 
 namespace Adramelech.Commands;
 
-public class Ban : InteractionModuleBase<SocketInteractionContext>
+public class Ban : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     [SlashCommand("ban", "Ban a member")]
     [RequireUserPermission(GuildPermission.BanMembers)]

@@ -2,12 +2,13 @@
 using System.Text.RegularExpressions;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using Flurl;
 using Newtonsoft.Json;
 
 namespace Adramelech.Commands;
 
-public class Lookup : InteractionModuleBase<SocketInteractionContext>
+public class Lookup : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     [SlashCommand("lookup", "Look up a ip or domain")]
     public async Task LookupAsync([Summary("local", "Address to lookup (ip or domain)")] string local)

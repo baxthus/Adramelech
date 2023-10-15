@@ -1,11 +1,11 @@
-﻿using Adramelech.Services;
+﻿using System.Reflection;
+using Adramelech.Services;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Events;
-#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
 namespace Adramelech;
 
@@ -13,8 +13,8 @@ public class Adramelech
 {
     public static Task Main() => new Adramelech().MainAsync();
 
-    private DiscordSocketClient _client;
-    private InteractionService _commands;
+    private DiscordSocketClient _client = null!;
+    private InteractionService _commands = null!;
 
     private async Task MainAsync()
     {
@@ -41,10 +41,11 @@ public class Adramelech
 
         await _client.LoginAsync(TokenType.Bot, Config.Bot.Token);
         await _client.StartAsync();
+
+        await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), services);
         
+        await services.GetRequiredService<InteractionHandler>().InitializeAsync();
         await services.GetRequiredService<CommandHandler>().InitializeAsync();
-        await services.GetRequiredService<ButtonHandler>().InitializeAsync();
-        await services.GetRequiredService<ModalHandler>().InitializeAsync();
         
         await Task.Delay(-1);
     }
@@ -54,9 +55,8 @@ public class Adramelech
         return new ServiceCollection()
             .AddSingleton<DiscordSocketClient>()
             .AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>()))
+            .AddSingleton<InteractionHandler>()
             .AddSingleton<CommandHandler>()
-            .AddSingleton<ButtonHandler>()
-            .AddSingleton<ModalHandler>()
             .BuildServiceProvider();
     }
 
@@ -80,7 +80,7 @@ public class Adramelech
 
     private async Task Ready()
     {
-        await _commands.RegisterCommandsGloballyAsync(true);
+        await _commands.RegisterCommandsGloballyAsync();
         
         Log.Information($"Connected as {_client.CurrentUser.Username}#{_client.CurrentUser.Discriminator}");
         Log.Information("Activity: {Type} {Name}", _client.Activity.Type, _client.Activity.Name);

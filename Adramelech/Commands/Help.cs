@@ -1,9 +1,10 @@
 ﻿using System.Text;
 using Discord.Interactions;
+using Discord.WebSocket;
 
 namespace Adramelech.Commands;
 
-public class Help : InteractionModuleBase<SocketInteractionContext>
+public class Help : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     [SlashCommand("help", "Get help with the bot")]
     public async Task HelpAsync()

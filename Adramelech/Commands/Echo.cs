@@ -1,9 +1,10 @@
 ﻿using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 
 namespace Adramelech.Commands;
 
-public class Echo : InteractionModuleBase<SocketInteractionContext>
+public class Echo : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     [SlashCommand("echo", "Echoes the given text")]
     [RequireUserPermission(GuildPermission.ManageMessages)]

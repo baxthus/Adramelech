@@ -1,12 +1,13 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
 namespace Adramelech.Commands;
 
-public class Obfuscate : InteractionModuleBase<SocketInteractionContext>
+public class Obfuscate : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     [SlashCommand("obfuscate", "Obfuscate a URL")]
     public async Task ObfuscateAsync([Summary("url", "The URL to obfuscate")] string url,

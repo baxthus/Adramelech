@@ -1,13 +1,12 @@
 ﻿using System.Text;
 using Discord;
-using Discord.Interactions;
 using Newtonsoft.Json;
 
 namespace Adramelech;
 
 public static class Utilities
 {
-    public static async Task ErrorResponse(this SocketInteractionContext ctx, string? desc = null)
+    public static async Task ErrorResponse(this IInteractionContext ctx, string? desc = null)
     {
         var embed = desc == null
             ? new EmbedBuilder()
@@ -73,18 +72,9 @@ public static class Utilities
         var methodType = typeof(T);
 
         // Deal with empty strings
-        // If at the end the boolValue is true, the string is empty or has a whitespace
         // I just implemented the whitespace check because the Github API returns a whitespace string sometimes
         if (methodType == typeof(string))
-        {
-            var boolValue = string.IsNullOrEmpty(value as string);
-
-            // Ugly ahh syntax
-            if (!boolValue)
-                boolValue = string.IsNullOrWhiteSpace(value as string);
-
-            return boolValue;
-        }
+            return string.IsNullOrEmpty(value as string) || string.IsNullOrWhiteSpace(value as string);
 
         // Deal with empty arrays
         if (methodType.IsArray) return (value as Array)!.Length == 0;

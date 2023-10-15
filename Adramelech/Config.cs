@@ -26,13 +26,7 @@ public static class Config
         public static readonly string FeedbackWebhook = Database.Config.Find(x => x.Key == "FeedbackWebhook").FirstOrDefault().Value;
         public static readonly Color EmbedColor = new(203, 166, 247);
         public static readonly Game Activity = new("with your mom <3");
-        public const string Avatar = "https://cdn.abysmal.eu.org/adramelech.png";
         public const string UserAgent = "Adramelech (By @baxthus)";
         
-    }
-    
-    public abstract class Owner
-    {
-        public const ulong Id = 505432621086670872;
     }
 }

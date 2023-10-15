@@ -1,10 +1,11 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 
 namespace Adramelech.Commands;
 
-public class Covid : InteractionModuleBase<SocketInteractionContext>
+public class Covid : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     private const string BaseUrl = "https://disease.sh/v3/covid-19";
 

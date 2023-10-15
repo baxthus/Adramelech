@@ -1,11 +1,12 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using Flurl;
 
 namespace Adramelech.Commands;
 
-public class CepSearch : InteractionModuleBase<SocketInteractionContext>
+public class CepSearch : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     [SlashCommand("cep", "Search for a CEP (Brazilian postal code)")]
     public async Task CepSearchAsync([Summary("cep", "CEP that you want to search")] string cep)

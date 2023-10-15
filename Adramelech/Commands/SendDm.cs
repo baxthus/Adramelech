@@ -4,7 +4,7 @@ using Discord.WebSocket;
 
 namespace Adramelech.Commands;
 
-public class SendDm : InteractionModuleBase<SocketInteractionContext>
+public class SendDm : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     [SlashCommand("send-dm", "Send a DM to a user")]
     [RequireOwner]
