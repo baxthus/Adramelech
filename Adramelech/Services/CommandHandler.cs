@@ -7,12 +7,10 @@ namespace Adramelech.Services;
 public class CommandHandler
 {
     private readonly InteractionService _commands;
-    private readonly IServiceProvider _services;
 
-    public CommandHandler(InteractionService commands, IServiceProvider services)
+    public CommandHandler(InteractionService commands)
     {
         _commands = commands;
-        _services = services;
     }
 
     public Task InitializeAsync()
