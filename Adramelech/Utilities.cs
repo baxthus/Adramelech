@@ -4,8 +4,17 @@ using Newtonsoft.Json;
 
 namespace Adramelech;
 
+/// <summary>
+/// A collection of utility methods
+/// </summary>
 public static class Utilities
 {
+    /// <summary>
+    /// Respond with a ephemeral error message
+    /// </summary>
+    /// <param name="ctx">The interaction context (can be implicit)</param>
+    /// <param name="desc">The description of the error (optional)</param>
+    /// <remarks>This is just to make the code look cleaner</remarks>
     public static async Task ErrorResponse(this IInteractionContext ctx, string? desc = null)
     {
         var embed = desc == null
@@ -20,10 +29,32 @@ public static class Utilities
         await ctx.Interaction.RespondAsync(embed: embed.Build(), ephemeral: true);
     }
 
+    /// <summary>
+    /// Serialize an object to JSON
+    /// </summary>
+    /// <param name="obj">The object to serialize (can be implicit)</param>
+    /// <returns>The serialized string of the object</returns>
+    /// <seealso cref="FromJson{T}"/>
     public static string ToJson(this object obj) => JsonConvert.SerializeObject(obj);
+
+    /// <summary>
+    /// Deserialize a JSON string to an object
+    /// </summary>
+    /// <param name="json">The JSON string to deserialize (can be implicit)</param>
+    /// <typeparam name="T">The type of the object to deserialize to</typeparam>
+    /// <returns>The deserialized object</returns>
+    /// <seealso cref="ToJson"/>
     public static T? FromJson<T>(this string json) => JsonConvert.DeserializeObject<T>(json);
 
-    // GET request
+    /// <summary>
+    /// GET request
+    /// </summary>
+    /// <param name="url">The URL to send the request to</param>
+    /// <param name="userAgent">The user agent to use (optional)</param>
+    /// <typeparam name="T">The type of the data to receive</typeparam>
+    /// <returns >The response from the server; default if the request failed</returns>
+    /// <remarks>This method don't support returning a number, because parsing a number from a string is unnecessary work</remarks>
+    /// <seealso cref="Request{T,TF}"/>
     public static async Task<T?> Request<T>(string url, string? userAgent = null)
     {
         using HttpClient client = new();
@@ -41,7 +72,17 @@ public static class Utilities
         return typeof(T) == typeof(string) ? (T)(object)content : content.FromJson<T>();
     }
 
-    // POST request
+    /// <summary>
+    ///  POST request
+    /// </summary>
+    /// <param name="url">The URL to send the request to</param>
+    /// <param name="data">The data to send</param>
+    /// <param name="userAgent">The user agent to use (optional)</param>
+    /// <typeparam name="T">The type of the data to send</typeparam>
+    /// <typeparam name="TF">The type of the data to receive</typeparam>
+    /// <returns>The response from the server; default if the request failed</returns>
+    /// <remarks>This method don't support returning a number, because parsing a number from a string is unnecessary work</remarks>
+    /// <seealso cref="Request{T}"/>
     public static async Task<TF?> Request<T, TF>(string url, T data, string? userAgent = null)
     {
         using HttpClient client = new();
@@ -49,6 +90,7 @@ public static class Utilities
         if (userAgent != null)
             client.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
 
+        // If the content is string, theres no need to serialize it
         using var httpContent = typeof(TF) == typeof(string)
             ? new StringContent((string)(object)data!, Encoding.UTF8, "text/plain")
             : new StringContent(data!.ToJson(), Encoding.UTF8, "application/json");
@@ -63,6 +105,10 @@ public static class Utilities
         return typeof(TF) == typeof(string) ? (TF)(object)content : content.FromJson<TF>();
     }
 
+    /// <summary>Run multiple checks on a value to see if it's invalid.</summary>
+    /// <param name="value">The value to check (can be implicit)</param>
+    /// <returns>True if the value is invalid, false if it's valid</returns>
+    /// <remarks>This is a very expensive method, so use it sparingly.</remarks>
     public static bool IsInvalid<T>(this T value)
     {
         // Deal with normal scenarios
@@ -91,18 +137,19 @@ public static class Utilities
         return obj.Equals(value);
     }
 
-    public static T OrElse<T>(this T value, T fallback)
-    {
-        return value.IsInvalid() ? fallback : value;
-    }
+    /// <summary>Return the value if it's not null, otherwise return the fallback</summary>
+    /// <param name="value">The value to check (can be implicit)</param>
+    /// <param name="fallback">The fallback value to return if the value is null</param>
+    /// <remarks>This calls <see cref="IsInvalid{T}"/> on the value, so it's expensive.</remarks>
+    public static T OrElse<T>(this T value, T fallback) => value.IsInvalid() ? fallback : value;
 
-    public static string Capitalize(this string text)
+    /// <summary>Capitalizes the first letter of a string</summary>
+    /// <param name="text">The string to capitalize (can be implicit)</param>
+    /// <remarks>Why is this not a built-in method?</remarks>
+    public static string Capitalize(this string text) => text.Length switch
     {
-        return text.Length switch
-        {
-            0 => text,
-            1 => text.ToUpper(),
-            _ => text[0].ToString().ToUpper() + text[1..]
-        };
-    }
+        0 => text,
+        1 => text.ToUpper(),
+        _ => text[0].ToString().ToUpper() + text[1..]
+    };
 }
