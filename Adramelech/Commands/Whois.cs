@@ -24,7 +24,7 @@ public class Whois : InteractionModuleBase<SocketInteractionContext<SocketSlashC
             .WithFooter("Powered by da.gd")
             .Build();
         
-        using var file = new MemoryStream(Encoding.UTF8.GetBytes(response!));
+        using var file = new MemoryStream(Encoding.UTF8.GetBytes(response));
 
         await RespondWithFileAsync(embed: embed, fileName: $"{target}.txt", fileStream: file);
     }
