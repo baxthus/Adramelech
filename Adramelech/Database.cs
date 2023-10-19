@@ -14,6 +14,10 @@ public static class Database
 
     public static void CreateConnection()
     {
+        // Setup camelCase convention, because the C# and MongoDB naming conventions are different.
+        var camelCaseConvention = new ConventionPack { new CamelCaseElementNameConvention() };
+        ConventionRegistry.Register("camelCase", camelCaseConvention, _ => true);
+        
         var connectionString = Environment.GetEnvironmentVariable("MONGODB_CONNECTION_STRING");
         if (string.IsNullOrEmpty(connectionString))
         {
@@ -36,12 +40,8 @@ public static class Database
             Log.Fatal(e, "Failed to connect to MongoDB.");
             Environment.Exit(1);
         }
-
-        // Setup camelCase convention, because the C# and MongoDB naming conventions are different.
-        var camelCaseConvention = new ConventionPack { new CamelCaseElementNameConvention() };
-        ConventionRegistry.Register("camelCase", camelCaseConvention, _ => true);
-
-        Log.Debug("Opened database connection, Database: {Database}", Db.DatabaseNamespace.DatabaseName);
+        
+        Log.Debug("Opened database connection, Database: {Database}", ConfigDb.DatabaseNamespace.DatabaseName);
     }
 
 
