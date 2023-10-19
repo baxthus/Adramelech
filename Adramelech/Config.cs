@@ -8,8 +8,8 @@ public static class Config
 {
     public static void Verify()
     {
-        if (string.IsNullOrEmpty(Bot.Token) |
-            string.IsNullOrEmpty(Bot.OpenWeatherKey) |
+        if (string.IsNullOrEmpty(Bot.Token) ||
+            string.IsNullOrEmpty(Bot.OpenWeatherKey) ||
             string.IsNullOrEmpty(Bot.FeedbackWebhook))
         {
             Log.Fatal("Data not found in database.");
