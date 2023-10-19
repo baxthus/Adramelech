@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using Serilog;
@@ -9,8 +10,10 @@ namespace Adramelech;
 public static class Database
 {
     private static MongoClient Client { get; set; } = null!;
-    private static IMongoDatabase Db { get; set; } = null!;
+    private static IMongoDatabase ConfigDb { get; set; } = null!;
+    private static IMongoDatabase GeneralDb { get; set; } = null!;
     public static IMongoCollection<ConfigSchema> Config { get; private set; } = null!;
+    public static IMongoCollection<MusicSchema> Music { get; private set; } = null!;
 
     public static void CreateConnection()
     {
@@ -32,8 +35,10 @@ public static class Database
         try
         {
             Client = new MongoClient(settings);
-            Db = Client.GetDatabase("adramelech");
-            Config = Db.GetCollection<ConfigSchema>("config");
+            ConfigDb = Client.GetDatabase("adramelech");
+            GeneralDb = Client.GetDatabase("general");
+            Config = ConfigDb.GetCollection<ConfigSchema>("config");
+            Music = GeneralDb.GetCollection<MusicSchema>("music");
         }
         catch (Exception e)
         {
@@ -52,5 +57,18 @@ public static class Database
         public ObjectId Id { get; set; }
         public string Key { get; set; }
         public string Value { get; set; }
+    }
+
+    [SuppressMessage("ReSharper", "PropertyCanBeMadeInitOnly.Global")]
+    public struct MusicSchema
+    {
+        // ReSharper disable once UnusedAutoPropertyAccessor.Global
+        public ObjectId Id { get; set; }
+        [BsonElement("title")]
+        public string Title { get; set; }
+        public string Album { get; set; }
+        public string Artist { get; set; }
+        public string Url { get; set; }
+        public bool Favorite { get; set; }
     }
 }
