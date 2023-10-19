@@ -14,8 +14,9 @@ public static class Utilities
     /// </summary>
     /// <param name="ctx">The interaction context (can be implicit)</param>
     /// <param name="desc">The description of the error (optional)</param>
+    /// <param name="isDeferred">Whether the response is deferred or not</param>
     /// <remarks>This is just to make the code look cleaner</remarks>
-    public static async Task ErrorResponse(this IInteractionContext ctx, string? desc = null)
+    public static async Task ErrorResponse(this IInteractionContext ctx, string? desc = null, bool isDeferred = false)
     {
         var embed = desc == null
             ? new EmbedBuilder()
@@ -26,7 +27,10 @@ public static class Utilities
                 .WithTitle("**Error!**")
                 .WithDescription(desc);
 
-        await ctx.Interaction.RespondAsync(embed: embed.Build(), ephemeral: true);
+        if (isDeferred)
+            await ctx.Interaction.FollowupAsync(embed: embed.Build(), ephemeral: true);
+        else
+            await ctx.Interaction.RespondAsync(embed: embed.Build(), ephemeral: true);
     }
 
     /// <summary>
