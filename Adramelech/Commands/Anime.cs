@@ -22,13 +22,17 @@ public class Anime : InteractionModuleBase<SocketInteractionContext<SocketSlashC
                 "NSFW" => "Borderline,Explicit",
                 _ => "big chungus"
             };
-            if (rating == "big chungus")
+            switch (rating)
             {
-                await Context.ErrorResponse("Invalid age rating");
-                return;
+                case "big chungus":
+                    await Context.ErrorResponse("Invalid age rating");
+                    return;
+                case "Borderline,Explicit" when Context.Channel is ITextChannel { IsNsfw: false }:
+                    await Context.ErrorResponse("This channel is not NSFW");
+                    return;
             }
 
-            var response = await Utilities.Request<NekosResponse>(new Url("https://api.nekosapi.com")
+            var response = await Utilities.Request<NekosApiResponse>(new Url("https://api.nekosapi.com")
                     .AppendPathSegments("v2", "images", "random")
                     // ReSharper disable once StringLiteralTypo
                     .SetQueryParam("filter[ageRating.in]", rating.ToLower()),
@@ -40,12 +44,12 @@ public class Anime : InteractionModuleBase<SocketInteractionContext<SocketSlashC
             }
 
             StringBuilder footer = new();
-            
+
             if (response.Data.Attributes.Source.Url != null)
                 footer.AppendLine($"Source: {response.Data.Attributes.Source.Url}");
-            
+
             footer.AppendLine("Powered by nekosapi.com");
-            
+
             var embed = new EmbedBuilder()
                 .WithImageUrl(response.Data.Attributes.File)
                 .WithFooter(footer.ToString())
@@ -56,14 +60,14 @@ public class Anime : InteractionModuleBase<SocketInteractionContext<SocketSlashC
 
         // Why C# don't have inline structs? Even Go have them
         [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
-        private struct NekosResponse
+        private struct NekosApiResponse
         {
             public DataType Data { get; init; }
-            
+
             internal struct DataType
             {
                 public AttributesType Attributes { get; init; }
-                
+
                 internal struct AttributesType
                 {
                     public string File { get; set; }
