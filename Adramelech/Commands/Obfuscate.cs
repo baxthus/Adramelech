@@ -1,9 +1,12 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Adramelech.Configuration;
+using Adramelech.Extensions;
+using Adramelech.Utilities;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using Serilog;
 
 namespace Adramelech.Commands;
 
@@ -11,34 +14,36 @@ public class Obfuscate : InteractionModuleBase<SocketInteractionContext<SocketSl
 {
     [SlashCommand("obfuscate", "Obfuscate a URL")]
     public async Task ObfuscateAsync([Summary("url", "The URL to obfuscate")] string url,
-        [Summary("metadata", "Whether to remove the metadata")] bool metadata = false)
+        [Summary("metadata", "Whether to remove the metadata")]
+        bool metadata = false)
     {
+        await DeferAsync();
+
         if (!url.StartsWith("http"))
         {
-            await Context.ErrorResponse("Invalid URL");
+            await Context.ErrorResponse("Invalid URL", true);
             return;
         }
 
-        var obfuscate = new ObfuscatePost()
+        var response = await $"https://owo.vc/api/v2/link".Request<ObfuscateData, ObfuscateResponse>(
+            new ObfuscateData
+            {
+                Link = url,
+                Generator = "sketchy",
+                Metadata = metadata ? "IGNORE" : "PROXY"
+            },
+            OtherConfig.UserAgent);
+        if (response.IsDefault())
         {
-            Link = url,
-            Generator = "sketchy",
-            Metadata = metadata ? "IGNORE" : "PROXY"
-        };
-
-        var response = await Utilities.Request<ObfuscatePost, ObfuscateGet>("https://owo.vc/api/v2/link",
-            obfuscate, Config.Bot.UserAgent);
-        if (response.IsInvalid())
-        {
-            await Context.ErrorResponse("Error obfuscating URL");
+            await Context.ErrorResponse("Error obfuscating URL", true);
             return;
         }
 
         var createdAt = DateTimeOffset.Parse(response.CreatedAt);
         var removedMetadata = response.Metadata == "IGNORE" ? "Yes" : "No";
 
-        var embed = new EmbedBuilder()
-            .WithColor(Config.Bot.EmbedColor)
+        await FollowupAsync(embed: new EmbedBuilder()
+            .WithColor(BotConfig.EmbedColor)
             .WithTitle("__Obfuscated URL__")
             .AddField(":outbox_tray: **Destination**", $"```{response.Destination}```")
             .AddField(":inbox_tray: **Result**", $"```{response.Id}```")
@@ -46,22 +51,18 @@ public class Obfuscate : InteractionModuleBase<SocketInteractionContext<SocketSl
             .AddField(":information_source: **Removed the metadata?**", $"```{removedMetadata}```")
             .AddField(":clock1: **Created at**", $"<t:{createdAt.ToUnixTimeSeconds()}>")
             .WithFooter("Powered by owo.vc")
-            .Build();
-
-        await RespondAsync(embed: embed);
+            .Build());
     }
 
-    [SuppressMessage("ReSharper", "NotAccessedField.Local")]
     [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
-    private struct ObfuscatePost
+    private struct ObfuscateData
     {
         public string Link;
         public string Generator;
         public string Metadata;
     }
 
-    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
-    private struct ObfuscateGet
+    private struct ObfuscateResponse
     {
         public string Id { get; set; }
         public string Destination { get; set; }

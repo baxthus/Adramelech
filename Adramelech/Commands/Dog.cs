@@ -1,4 +1,6 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Adramelech.Configuration;
+using Adramelech.Extensions;
+using Adramelech.Utilities;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -10,23 +12,22 @@ public class Dog : InteractionModuleBase<SocketInteractionContext<SocketSlashCom
     [SlashCommand("dog", "Gets a random dog image")]
     public async Task DogAsync()
     {
-        var response = await Utilities.Request<DogResponse>("https://dog.ceo/api/breeds/image/random");
-        if (response.IsInvalid() || response.Status != "success")
+        await DeferAsync();
+
+        var response = await "https://dog.ceo/api/breeds/image/random".Request<DogResponse>();
+        if (response.IsDefault() || response.Status != "success")
         {
-            await Context.ErrorResponse("Failed to get dog image");
+            await Context.ErrorResponse("Failed to get dog image", true);
             return;
         }
-        
-        var embed = new EmbedBuilder()
-            .WithColor(Config.Bot.EmbedColor)
+
+        await FollowupAsync(embed: new EmbedBuilder()
+            .WithColor(BotConfig.EmbedColor)
             .WithImageUrl(response.Message)
             .WithFooter("Powered by dog.ceo")
-            .Build();
-        
-        await RespondAsync(embed: embed);
+            .Build());
     }
-    
-    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
+
     private struct DogResponse
     {
         public string Status { get; set; }

@@ -1,8 +1,11 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Adramelech.Configuration;
+using Adramelech.Extensions;
+using Adramelech.Utilities;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Flurl;
+using Serilog;
 
 namespace Adramelech.Commands;
 
@@ -11,21 +14,23 @@ public class CepSearch : InteractionModuleBase<SocketInteractionContext<SocketSl
     [SlashCommand("cep", "Search for a CEP (Brazilian postal code)")]
     public async Task CepSearchAsync([Summary("cep", "CEP that you want to search")] string cep)
     {
-        var response = await Utilities.Request<CepResponse>($"https://brasilapi.com.br/api/cep/v2/{cep}");
-        if (response.IsInvalid())
+        await DeferAsync();
+
+        var response = await $"https://brasilapi.com.br/api/cep/v2/{cep}".Request<CepResponse>();
+        if (response.IsDefault())
         {
-            await Context.ErrorResponse("Something went wrong while searching for the CEP");
+            await Context.ErrorResponse("Something went wrong while searching for the CEP", true);
             return;
         }
 
-        if (!response.Name.IsInvalid())
+        if (!response.Name.IsNullOrEmpty())
         {
             var errors = "**Errors:**\n" +
                          $"**Name:** `{response.Name}`\n" +
                          $"**Message:** `{response.Message}`\n" +
                          $"**Type:** `{response.Type}`";
 
-            await Context.ErrorResponse(errors);
+            await Context.ErrorResponse(errors, true);
             return;
         }
 
@@ -40,36 +45,32 @@ public class CepSearch : InteractionModuleBase<SocketInteractionContext<SocketSl
                             $"**Latitude:** `{response.Location.Coordinates.Latitude.OrElse("N/A")}`\n" +
                             $"**Longitude:** `{response.Location.Coordinates.Longitude.OrElse("N/A")}`";
 
-        var embed = new EmbedBuilder()
-            .WithColor(Config.Bot.EmbedColor)
-            .WithTitle("__Adramelech CEP Search__")
-            .AddField(":zap: **Main**", mainField, true)
-            .AddField(":earth_americas: **Location**", locationField, true)
-            .WithFooter("Powered by brasilapi.com.br")
-            .Build();
-
         var mapsUrl = new Url("https://www.google.com")
             .AppendPathSegments("maps", "search", "/")
             .SetQueryParam("api", 1);
 
         // If the coordinates are invalid, search for the street, city and state
-        if (response.Location.Coordinates.Latitude.IsInvalid() || response.Location.Coordinates.Longitude.IsInvalid())
+        if (response.Location.Coordinates.Latitude.IsNullOrEmpty() ||
+            response.Location.Coordinates.Longitude.IsNullOrEmpty())
             mapsUrl.SetQueryParam("query", $"{response.Street}, {response.City}, {response.State}");
         else
             mapsUrl.SetQueryParam("query",
                 $"{response.Location.Coordinates.Latitude},{response.Location.Coordinates.Longitude}");
 
-        var button = new ComponentBuilder()
-            .WithButton("Open location in Google Maps", url: mapsUrl, style: ButtonStyle.Link,
-                // Emoji is :earth_americas:
-                emote: new Emoji("\uD83C\uDF0E"))
-            .Build();
-
-        await RespondAsync(embed: embed, components: button);
+        await FollowupAsync(
+            embed: new EmbedBuilder()
+                .WithColor(BotConfig.EmbedColor)
+                .WithTitle("__Adramelech CEP Search__")
+                .AddField(":zap: **Main**", mainField, true)
+                .AddField(":earth_americas: **Location**", locationField, true)
+                .WithFooter("Powered by brasilapi.com.br")
+                .Build(),
+            components: new ComponentBuilder()
+                .WithButton("Open location in Google Maps", url: mapsUrl, style: ButtonStyle.Link,
+                    emote: new Emoji("\uD83C\uDF0E"))
+                .Build());
     }
 
-    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
-    [SuppressMessage("ReSharper", "PropertyCanBeMadeInitOnly.Local")]
     private struct CepResponse
     {
         public string? Name { get; set; }
@@ -81,14 +82,14 @@ public class CepSearch : InteractionModuleBase<SocketInteractionContext<SocketSl
         public string Neighborhood { get; set; }
         public string Street { get; set; }
         public string Service { get; set; }
-        public LocationStruct Location { get; set; }
+        public LocationType Location { get; init; }
 
-        internal struct LocationStruct
+        internal struct LocationType
         {
             public string Type { get; set; }
-            public CoordinatesStruct Coordinates { get; set; }
+            public CoordinatesType Coordinates { get; init; }
 
-            internal struct CoordinatesStruct
+            internal struct CoordinatesType
             {
                 public string? Latitude { get; set; }
                 public string? Longitude { get; set; }

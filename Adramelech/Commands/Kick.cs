@@ -1,4 +1,6 @@
-﻿using Discord;
+﻿using Adramelech.Configuration;
+using Adramelech.Extensions;
+using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 
@@ -21,7 +23,7 @@ public class Kick : InteractionModuleBase<SocketInteractionContext<SocketSlashCo
             await Context.ErrorResponse("You cannot kick yourself");
             return;
         }
-        
+
         if (member.Hierarchy >= Context.Guild.CurrentUser.Hierarchy)
         {
             await Context.ErrorResponse("You cannot kick a member with a higher or equal role");
@@ -29,17 +31,27 @@ public class Kick : InteractionModuleBase<SocketInteractionContext<SocketSlashCo
         }
 
         await member.BanAsync(pruneDays, reason);
-        
-        await member.SendMessageAsync($"You've been kicked from {Context.Guild.Name}. Reason: {reason}");
-        
-        var embed = new EmbedBuilder()
-            .WithColor(Config.Bot.EmbedColor)
+
+        await RespondAsync(embed: new EmbedBuilder()
+            .WithColor(BotConfig.EmbedColor)
             .WithTitle("__Member Kicked__")
             .WithDescription($"User {member.Username} has been kicked")
             .AddField("Reason", $"`{reason}`")
             .AddField("Author", Context.User.Mention)
-            .Build();
-        
-        await RespondAsync(embed: embed);
+            .Build());
+
+        try
+        {
+            await member.SendMessageAsync($"You've been kicked from {Context.Guild.Name}. Reason: {reason}");
+        }
+        catch
+        {
+            await FollowupAsync(
+                embed: new EmbedBuilder()
+                    .WithColor(Color.LighterGrey)
+                    .WithTitle("Fail to notify the user about the kick")
+                    .Build(),
+                ephemeral: true);
+        }
     }
 }

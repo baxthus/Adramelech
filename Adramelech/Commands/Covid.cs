@@ -1,4 +1,6 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Adramelech.Configuration;
+using Adramelech.Extensions;
+using Adramelech.Utilities;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -14,25 +16,27 @@ public class Covid : InteractionModuleBase<SocketInteractionContext<SocketSlashC
         [Summary("country", "Country to get stats from (can be 'worldwide')")]
         string country = "worldwide")
     {
+        await DeferAsync();
+
         var response = country.ToLower() == "worldwide"
-            ? await Utilities.Request<CovidResponse>(BaseUrl + "/all")
-            : await Utilities.Request<CovidResponse>(BaseUrl + $"/countries/{country}");
-        if (response.IsInvalid())
+            ? await $"{BaseUrl}/all".Request<CovidResponse>()
+            : await $"{BaseUrl}/countries/{country}".Request<CovidResponse>();
+        if (response.IsDefault())
         {
-            await Context.ErrorResponse("Error getting covid stats");
+            await Context.ErrorResponse("Error getting covid stats", true);
             return;
         }
 
-        if (!response.Message.IsInvalid())
+        if (!response.Message.IsNullOrEmpty())
         {
-            await Context.ErrorResponse($"`{response.Message}`");
+            await Context.ErrorResponse($"`{response.Message}`", true);
             return;
         }
 
         var local = country.ToLower() == "worldwide" ? country.ToLower() : response.Country;
 
-        var embed = new EmbedBuilder()
-            .WithColor(Config.Bot.EmbedColor)
+        await FollowupAsync(embed: new EmbedBuilder()
+            .WithColor(BotConfig.EmbedColor)
             .WithTitle($"__Covid Stats for {local}__")
             .WithDescription($"Cases: {response.Cases}\n" +
                              $"Today Cases: {response.TodayCases}\n" +
@@ -41,12 +45,9 @@ public class Covid : InteractionModuleBase<SocketInteractionContext<SocketSlashC
                              $"Recovered: {response.Recovered}\n" +
                              $"Today Recovered: {response.TodayRecovered}")
             .WithFooter($"Powered by disease.sh")
-            .Build();
-
-        await RespondAsync(embed: embed);
+            .Build());
     }
 
-    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
     private struct CovidResponse
     {
         public string? Message { get; set; }

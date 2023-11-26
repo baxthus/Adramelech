@@ -10,19 +10,16 @@ public class InteractionHandler
     private readonly DiscordSocketClient _client;
     private readonly InteractionService _interactionService;
     private readonly IServiceProvider _services;
-    
-    public InteractionHandler(DiscordSocketClient client, InteractionService interactionService, IServiceProvider services)
+
+    public InteractionHandler(DiscordSocketClient client, InteractionService interactionService,
+        IServiceProvider services)
     {
         _client = client;
         _interactionService = interactionService;
         _services = services;
     }
 
-    public Task InitializeAsync()
-    {
-        _client.InteractionCreated += HandleInteraction;
-        return Task.CompletedTask;
-    }
+    public void InitializeAsync() => _client.InteractionCreated += HandleInteraction;
 
     private async Task HandleInteraction(SocketInteraction interaction)
     {
@@ -35,11 +32,12 @@ public class InteractionHandler
         {
             Log.Error("Error while handling interaction: {Message}", ex.Message);
             // This is a hacky way to delete the original response if an error occurs
+            // Don't work btw
             await interaction.GetOriginalResponseAsync().ContinueWith(async msg => await msg.Result.DeleteAsync());
         }
     }
-    
-    
+
+
     private static IInteractionContext CreateGenetic(SocketInteraction interaction, DiscordSocketClient client) =>
         interaction switch
         {

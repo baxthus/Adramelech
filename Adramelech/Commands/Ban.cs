@@ -1,4 +1,6 @@
-﻿using Discord;
+﻿using Adramelech.Configuration;
+using Adramelech.Extensions;
+using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 
@@ -30,16 +32,26 @@ public class Ban : InteractionModuleBase<SocketInteractionContext<SocketSlashCom
 
         await member.BanAsync(pruneDays, reason);
 
-        await member.SendMessageAsync($"You've been banned from {Context.Guild.Name}. Reason: {reason}");
-
-        var embed = new EmbedBuilder()
-            .WithColor(Config.Bot.EmbedColor)
+        await RespondAsync(embed: new EmbedBuilder()
+            .WithColor(BotConfig.EmbedColor)
             .WithTitle("__Member Banned__")
             .WithDescription($"User {member.Username} has been banned")
             .AddField("Reason", $"`{reason}`")
             .AddField("Author", Context.User.Mention)
-            .Build();
+            .Build());
 
-        await RespondAsync(embed: embed);
+        try
+        {
+            await member.SendMessageAsync($"You've been banned from {Context.Guild.Name}. Reason: {reason}");
+        }
+        catch
+        {
+            await FollowupAsync(
+                embed: new EmbedBuilder()
+                    .WithColor(Color.LighterGrey)
+                    .WithTitle("Fail to notify the user about the ban")
+                    .Build(),
+                ephemeral: true);
+        }
     }
 }

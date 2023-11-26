@@ -1,4 +1,6 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Adramelech.Configuration;
+using Adramelech.Extensions;
+using Adramelech.Utilities;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -10,29 +12,24 @@ public class Cat : InteractionModuleBase<SocketInteractionContext<SocketSlashCom
     [SlashCommand("cat", "Get a random cat image")]
     public async Task CatAsync()
     {
-        var response = await Utilities.Request<CatResponse>("https://cataas.com/cat?json=true");
-        if (response.IsInvalid())
+        await DeferAsync();
+
+        var response = await "https://api.thecatapi.com/v1/images/search".Request<CatResponse[]>();
+        if (response.IsDefault())
         {
-            await Context.ErrorResponse("Failed to get cat image");
+            await Context.ErrorResponse("Failed to get cat image", true);
             return;
         }
-        
-        if (response.Owner is null or "null" or "Null" or "")
-            response.Owner = "Unknown";
 
-        var embed = new EmbedBuilder()
-            .WithColor(Config.Bot.EmbedColor)
-            .WithImageUrl("https://cataas.com" + response.Url)
-            .WithFooter($"Owner: {response.Owner}\nPowered by cataas.com")
-            .Build();
-
-        await RespondAsync(embed: embed);
+        await FollowupAsync(embed: new EmbedBuilder()
+            .WithColor(BotConfig.EmbedColor)
+            .WithImageUrl(response!.First().Url)
+            .WithFooter($"Powered by thecatapi.com")
+            .Build());
     }
-    
-    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
+
     private struct CatResponse
     {
-        public string Owner { get; set; }
         public string Url { get; set; }
     }
 }

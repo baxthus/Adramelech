@@ -28,8 +28,9 @@ public class Help : InteractionModuleBase<SocketInteractionContext<SocketSlashCo
         foreach (var command in commands)
             commandsString.AppendLine($"{command.Name.PadRight(alignment)} - {command.Description}");
 
-        using var file = new MemoryStream(Encoding.UTF8.GetBytes(commandsString.ToString()));
-
-        await RespondWithFileAsync(fileName: "commands.diff", fileStream: file, ephemeral: true);
+        await RespondWithFileAsync(
+            fileName: "commands.diff",
+            fileStream: new MemoryStream(Encoding.UTF8.GetBytes(commandsString.ToString())),
+            ephemeral: true);
     }
 }

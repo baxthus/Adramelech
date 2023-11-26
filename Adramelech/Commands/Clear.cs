@@ -1,4 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using Adramelech.Configuration;
+using Adramelech.Extensions;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -31,14 +33,12 @@ public class Clear : InteractionModuleBase<SocketInteractionContext<SocketSlashC
             return;
         }
 
-        var embed = new EmbedBuilder()
-            .WithColor(Config.Bot.EmbedColor)
+        await RespondAsync(embed: new EmbedBuilder()
+            .WithColor(BotConfig.EmbedColor)
             .WithTitle("__Clear__")
             .WithDescription($"Successfully deleted {messages.Count()} messages\n" +
                              $"Command executed by {Context.User.Mention}")
-            .Build();
-
-        await RespondAsync(embed: embed);
+            .Build());
 
         await Task.Delay(5000);
 

@@ -1,4 +1,6 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Adramelech.Configuration;
+using Adramelech.Extensions;
+using Adramelech.Utilities;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -10,23 +12,22 @@ public class NekoCommand : InteractionModuleBase<SocketInteractionContext<Socket
     [SlashCommand("neko", "Get a random neko image")]
     public async Task NekoAsync()
     {
-        var response = await Utilities.Request<Neko>("https://nekos.life/api/v2/img/neko");
-        if (response.IsInvalid())
+        await DeferAsync();
+
+        var response = await "https://nekos.life/api/v2/img/neko".Request<Neko>();
+        if (response.IsDefault())
         {
-            await Context.ErrorResponse("Error while fetching neko image");
+            await Context.ErrorResponse("Error while fetching neko image", true);
             return;
         }
 
-        var embed = new EmbedBuilder()
-            .WithColor(Config.Bot.EmbedColor)
+        await FollowupAsync(embed: new EmbedBuilder()
+            .WithColor(BotConfig.EmbedColor)
             .WithImageUrl(response.Url)
             .WithFooter("Powered by nekos.life")
-            .Build();
-
-        await RespondAsync(embed: embed);
+            .Build());
     }
 
-    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
     private struct Neko
     {
         public string Url { get; set; }

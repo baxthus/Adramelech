@@ -1,4 +1,5 @@
-﻿using Discord.Interactions;
+﻿using Adramelech.Configuration;
+using Discord.Interactions;
 using Discord;
 using Discord.Webhook;
 using Discord.WebSocket;
@@ -10,15 +11,13 @@ public class Feedback : InteractionModuleBase<SocketInteractionContext<SocketSla
     [SlashCommand("feedback", "Send feedback to the developers")]
     public async Task FeedbackAsync() => await RespondWithModalAsync<FeedbackModal>("feedback_modal");
 
-    // ReSharper disable once ClassNeverInstantiated.Global
     public class FeedbackModal : IModal
     {
         public string Title => "Feedback";
 
         [InputLabel("Message")]
         [ModalTextInput("message", TextInputStyle.Paragraph, "Please enter your feedback here")]
-        // ReSharper disable once AutoPropertyCanBeMadeGetOnly.Global
-        public string Message { get; set; } = null!;
+        public required string Message { get; set; }
     }
 }
 
@@ -29,18 +28,21 @@ public class FeedbackModalResponse : InteractionModuleBase<SocketInteractionCont
     {
         var message = modal.Message;
 
-        var embed = new EmbedBuilder()
-            .WithColor(Config.Bot.EmbedColor)
-            .WithTitle("__Adramelech Feedback__")
-            .WithDescription($"From `{Context.User.Username}` (`{Context.User.Id}`)")
-            .WithThumbnailUrl(Context.User.GetAvatarUrl(size: 4096))
-            .AddField("Message", $"```{message}```")
-            .Build();
+        var webhook = new DiscordWebhookClient(ServicesConfig.Instance.FeedbackWebhook);
 
-        var webhook = new DiscordWebhookClient(Config.Bot.FeedbackWebhook);
-
-        await webhook.SendMessageAsync(embeds: new[] { embed }, username: "Adramelech Feedback",
-            avatarUrl: Context.Client.CurrentUser.GetAvatarUrl(size: 4096));
+        await webhook.SendMessageAsync(
+            username: "Adramelech Feedback",
+            avatarUrl: Context.Client.CurrentUser.GetAvatarUrl(size: 4096),
+            embeds: new[]
+            {
+                new EmbedBuilder()
+                    .WithColor(BotConfig.EmbedColor)
+                    .WithTitle("__Adramelech Feedback__")
+                    .WithDescription($"From `{Context.User.Username}` (`{Context.User.Id}`)")
+                    .WithThumbnailUrl(Context.User.GetAvatarUrl(size: 4096))
+                    .AddField("Message", $"```{message}```")
+                    .Build()
+            });
 
         await RespondAsync("Your feedback has been sent to the developers.", ephemeral: true);
     }

@@ -1,7 +1,9 @@
-﻿using Discord;
+﻿using Adramelech.Configuration;
+using Adramelech.Extensions;
+using Adramelech.Utilities;
+using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using Flurl;
 
 namespace Adramelech.Commands;
 
@@ -10,24 +12,21 @@ public class Short : InteractionModuleBase<SocketInteractionContext<SocketSlashC
     [SlashCommand("short", "Shorten a URL")]
     public async Task ShortAsync([Summary("url", "The URL to shorten")] string url)
     {
-        var response = await Utilities.Request<string>(new Url("https://is.gd")
-            .AppendPathSegment("create.php")
-            .SetQueryParam("format", "simple")
-            .SetQueryParam("url", url));
-        if (response.IsInvalid() || response!.Replace("\n", "").StartsWith("Error"))
+        await DeferAsync();
+
+        var response = await $"https://is.gd/create.php?format=simple&url={url}".Request<string>();
+        if (response.IsNullOrEmpty() || response!.Replace("\n", "").StartsWith("Error"))
         {
-            await Context.ErrorResponse("Error shortening URL");
+            await Context.ErrorResponse("Error shortening URL", true);
             return;
         }
 
-        var embed = new EmbedBuilder()
-            .WithColor(Config.Bot.EmbedColor)
+        await FollowupAsync(embed: new EmbedBuilder()
+            .WithColor(BotConfig.EmbedColor)
             .WithTitle("__Shortened URL__")
             .AddField(":outbox_tray: Original URL", url)
             .AddField(":inbox_tray: Shortened URL", response)
             .WithFooter("Powered by is.gd")
-            .Build();
-
-        await RespondAsync(embed: embed);
+            .Build());
     }
 }

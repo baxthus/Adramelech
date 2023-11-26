@@ -1,4 +1,5 @@
-﻿using Discord;
+﻿using Adramelech.Configuration;
+using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 
@@ -10,15 +11,18 @@ public class Echo : InteractionModuleBase<SocketInteractionContext<SocketSlashCo
     [RequireUserPermission(GuildPermission.ManageMessages)]
     public async Task EchoAsync([Summary("text", "The text to echo")] string text)
     {
-        var final = text + $"\n\n \\- {Context.User.Mention}";
-        
+        // The "\\-" is to the character "-" not be interpreted as a markdown list
+        // Is necessary two "\\", because the first is to escape the second, and the second is to escape the "-"
+        // I love string interpolation
+        var final = $"{text}\n\n \\- {Context.User.Mention}";
+
         await Context.Channel.SendMessageAsync(final);
 
-        var embed = new EmbedBuilder()
-            .WithColor(Config.Bot.EmbedColor)
-            .WithTitle("Message sent")
-            .Build();
-
-        await RespondAsync(embed: embed, ephemeral: true);
+        await RespondAsync(
+            embed: new EmbedBuilder()
+                .WithColor(BotConfig.EmbedColor)
+                .WithTitle("Message sent")
+                .Build(),
+            ephemeral: true);
     }
 }

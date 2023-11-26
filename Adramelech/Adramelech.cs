@@ -1,4 +1,6 @@
 ﻿using System.Reflection;
+using Adramelech.Configuration;
+using Adramelech.Database;
 using Adramelech.Services;
 using Discord;
 using Discord.Interactions;
@@ -18,35 +20,34 @@ public class Adramelech
 
     private async Task MainAsync()
     {
-        Database.CreateConnection();
-        Config.Verify();
-        
         Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Verbose()
+            .MinimumLevel.Debug()
             .Enrich.FromLogContext()
             .WriteTo.Console()
             .CreateLogger();
-        
+
+        DatabaseManager.Connect();
+
         var services = ConfigureServices();
 
         _client = services.GetRequiredService<DiscordSocketClient>();
         _commands = services.GetRequiredService<InteractionService>();
-        
+
         _client.Log += LogAsync;
         _commands.Log += LogAsync;
-        
+
         _client.Ready += Ready;
 
-        await _client.SetActivityAsync(Config.Bot.Activity);
+        await _client.SetActivityAsync(BotConfig.Activity);
 
-        await _client.LoginAsync(TokenType.Bot, Config.Bot.Token);
+        await _client.LoginAsync(TokenType.Bot, BotConfig.Instance.Token);
         await _client.StartAsync();
 
         await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), services);
-        
-        await services.GetRequiredService<InteractionHandler>().InitializeAsync();
-        await services.GetRequiredService<CommandHandler>().InitializeAsync();
-        
+
+        services.GetRequiredService<InteractionHandler>().InitializeAsync();
+        services.GetRequiredService<CommandHandler>().Initialize();
+
         await Task.Delay(-1);
     }
 
@@ -72,7 +73,7 @@ public class Adramelech
             LogSeverity.Debug => LogEventLevel.Debug,
             _ => LogEventLevel.Information
         };
-        
+
         Log.Write(severity, msg.Exception, "[{Source}] {Message}", msg.Source, msg.Message);
 
         await Task.CompletedTask;
@@ -81,7 +82,7 @@ public class Adramelech
     private async Task Ready()
     {
         await _commands.RegisterCommandsGloballyAsync();
-        
+
         Log.Information($"Connected as {_client.CurrentUser.Username}#{_client.CurrentUser.Discriminator}");
         Log.Information("Activity: {Type} {Name}", _client.Activity.Type, _client.Activity.Name);
     }

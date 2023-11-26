@@ -1,4 +1,7 @@
 ﻿using System.Text;
+using Adramelech.Configuration;
+using Adramelech.Extensions;
+using Adramelech.Utilities;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -10,21 +13,22 @@ public class DnsLookup : InteractionModuleBase<SocketInteractionContext<SocketSl
     [SlashCommand("dns-lookup", "Performs a DNS lookup on the given domain")]
     public async Task DnsLookupAsync([Summary("domain", "Domain to lookup")] string domain)
     {
-        var response = await Utilities.Request<string>($"https://da.gd/dns/{domain}");
-        if (response.IsInvalid())
+        await DeferAsync();
+
+        var response = await $"https://da.gd/dns/{domain}".Request<string>();
+        if (response is null || response.Replace("\n", "").IsNullOrEmpty())
         {
-            await Context.ErrorResponse("Invalid domain");
+            await Context.ErrorResponse("Invalid domain", true);
             return;
         }
 
-        var embed = new EmbedBuilder()
-            .WithColor(Config.Bot.EmbedColor)
-            .WithTitle("__DNS Lookup__")
-            .AddField(":link: **Domain**", $"```{domain}```")
-            .Build();
-        
-        using var file = new MemoryStream(Encoding.UTF8.GetBytes(response!));
-
-        await RespondWithFileAsync(embed: embed, fileName: "domain.zone", fileStream: file);
+        await FollowupWithFileAsync(
+            embed: new EmbedBuilder()
+                .WithColor(BotConfig.EmbedColor)
+                .WithTitle("__DNS Lookup__")
+                .AddField(":link: **Domain**", $"```{domain}```")
+                .Build(),
+            fileName: "domain.zone",
+            fileStream: new MemoryStream(Encoding.UTF8.GetBytes(response!)));
     }
 }

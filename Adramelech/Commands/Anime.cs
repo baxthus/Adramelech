@@ -1,9 +1,12 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Text;
+﻿using System.Text;
+using Adramelech.Configuration;
+using Adramelech.Extensions;
+using Adramelech.Utilities;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Flurl;
+using Newtonsoft.Json;
 
 namespace Adramelech.Commands;
 
@@ -14,70 +17,70 @@ public class Anime : InteractionModuleBase<SocketInteractionContext<SocketSlashC
     public class Media : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
     {
         [SlashCommand("image", "Get a random anime image")]
-        public async Task ImageAsync([Summary("age-rating", "The age rating of the image")] [Choice("SFW", "SFW")] [Choice("NSFW", "NSFW")] string ageRating)
+        public async Task ImageAsync(
+            [Summary("age-rating", "The age rating of the image")] [Choice("SFW", "SFW")] [Choice("NSFW", "NSFW")]
+            string ageRating)
         {
-            var rating = ageRating switch
+            await DeferAsync();
+
+            string[] rating;
+
+            switch (ageRating)
             {
-                "SFW" => "SFW,Questionable,Suggestive",
-                "NSFW" => "Borderline,Explicit",
-                _ => "big chungus"
-            };
-            switch (rating)
-            {
-                case "big chungus":
+                case "SFW":
+                    rating = new[] { "safe", "questionable" };
+                    break;
+                case "NSFW":
+                    if (Context.Channel is ITextChannel { IsNsfw: false })
+                    {
+                        await Context.ErrorResponse("This channel is not NSFW", true);
+                        return;
+                    }
+
+                    rating = new[] { "borderline", "explicit" };
+                    break;
+                default:
                     await Context.ErrorResponse("Invalid age rating");
-                    return;
-                case "Borderline,Explicit" when Context.Channel is ITextChannel { IsNsfw: false }:
-                    await Context.ErrorResponse("This channel is not NSFW");
                     return;
             }
 
-            var response = await Utilities.Request<NekosApiResponse>(new Url("https://api.nekosapi.com")
-                    .AppendPathSegments("v2", "images", "random")
-                    // ReSharper disable once StringLiteralTypo
-                    .SetQueryParam("filter[ageRating.in]", rating.ToLower()),
-                Config.Bot.UserAgent);
-            if (response.IsInvalid())
+            var url = new Url("https://api.nekosapi.com")
+                .AppendPathSegments("v3", "images", "random")
+                .SetQueryParam("limit", 1)
+                .SetQueryParam("rating", rating)
+                .ToString()!;
+
+            var response = await url.Request<NekosApiResponse>(OtherConfig.UserAgent);
+            if (response.IsDefault())
             {
-                await Context.ErrorResponse("Failed to get image");
+                await Context.ErrorResponse("Failed to get image", true);
                 return;
             }
 
+            var data = response.Items.First();
+
             StringBuilder footer = new();
 
-            if (response.Data.Attributes.Source.Url != null)
-                footer.AppendLine($"Source: {response.Data.Attributes.Source.Url}");
+            if (data.Source is not null)
+                footer.AppendLine($"Source: {data.Source}");
 
-            footer.AppendLine("Powered by nekosapi.com");
+            footer.Append("Powered by nekosapi.com");
 
-            var embed = new EmbedBuilder()
-                .WithImageUrl(response.Data.Attributes.File)
+            await FollowupAsync(embed: new EmbedBuilder()
+                .WithColor(BotConfig.EmbedColor)
+                .WithImageUrl(data.ImageUrl)
                 .WithFooter(footer.ToString())
-                .Build();
-
-            await RespondAsync(embed: embed);
+                .Build());
         }
 
-        // Why C# don't have inline structs? Even Go have them
-        [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
         private struct NekosApiResponse
         {
-            public DataType Data { get; init; }
+            public Item[] Items { get; set; }
 
-            internal struct DataType
+            internal struct Item
             {
-                public AttributesType Attributes { get; init; }
-
-                internal struct AttributesType
-                {
-                    public string File { get; set; }
-                    public SourceType Source { get; init; }
-
-                    internal struct SourceType
-                    {
-                        public string? Url { get; set; }
-                    }
-                }
+                [JsonProperty("image_url")] public string ImageUrl { get; set; }
+                public string? Source { get; set; }
             }
         }
     }

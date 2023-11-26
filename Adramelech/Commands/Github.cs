@@ -1,8 +1,9 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Adramelech.Configuration;
+using Adramelech.Extensions;
+using Adramelech.Utilities;
 using Discord.Interactions;
 using Discord;
 using Discord.WebSocket;
-using Flurl;
 using Newtonsoft.Json;
 
 namespace Adramelech.Commands;
@@ -17,12 +18,12 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
         [Summary("repository", "Github repository")]
         string repository)
     {
-        var response = await Utilities.Request<Repository>(new Url(BaseUrl)
-                .AppendPathSegments("repos", user, repository),
-            Config.Bot.UserAgent);
-        if (response.IsInvalid())
+        await DeferAsync();
+
+        var response = await $"{BaseUrl}/repos/{user}/{repository}".Request<Repository>(OtherConfig.UserAgent);
+        if (response.IsDefault())
         {
-            await Context.ErrorResponse("Failed to get repository information");
+            await Context.ErrorResponse("Failed to get repository information", true);
             return;
         }
 
@@ -39,51 +40,34 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
                          $"**ID:** {response.Owner.Id}\n" +
                          $"**Type:** {response.Owner.Type}\n";
 
-        string licenseField;
-        if (!response.License.IsInvalid())
-        {
-            var license = await Utilities.Request<License>(new Url(BaseUrl)
-                    .AppendPathSegments("licenses", response.License?.Key),
-                Config.Bot.UserAgent);
-            if (license.IsInvalid())
-            {
-                await Context.ErrorResponse("Failed to get license information");
-                return;
-            }
+        var licenseField = response.License is not null
+            ? await GetLicense(response.License?.Key!)
+            : "No license";
 
-            licenseField = $"**Name:** {license.Name}\n" +
-                           $"**Permissions:** {license.Permissions.ArrayFormat()}\n" +
-                           $"**Conditions:** {license.Conditions.ArrayFormat()}\n" +
-                           $"**Limitations:** {license.Limitations.ArrayFormat()}\n";
-        }
-        else
-            licenseField = "No license";
-
-        var embed = new EmbedBuilder()
-            .WithColor(Config.Bot.EmbedColor)
-            .WithTitle("__Repository Information__")
-            .WithThumbnailUrl(response.Owner.AvatarUrl)
-            .AddField(":zap: **Main**", mainField)
-            .AddField(":bust_in_silhouette: **Owner**", ownerField)
-            .AddField(":scroll: **License**", licenseField)
-            .Build();
-
-        var buttons = new ComponentBuilder()
-            .WithButton("Repository", url: response.HtmlUrl, style: ButtonStyle.Link)
-            .WithButton("Owner", url: $"https://github.com/{response.Owner.Login}", style: ButtonStyle.Link)
-            .Build();
-
-        await RespondAsync(embed: embed, components: buttons);
+        await FollowupAsync(
+            embed: new EmbedBuilder()
+                .WithColor(BotConfig.EmbedColor)
+                .WithTitle("__Repository Information__")
+                .WithThumbnailUrl(response.Owner.AvatarUrl)
+                .AddField(":zap: **Main**", mainField)
+                .AddField(":bust_in_silhouette: **Owner**", ownerField)
+                .AddField(":scroll: **License**", licenseField)
+                .Build(),
+            components: new ComponentBuilder()
+                .WithButton("Repository", url: response.HtmlUrl, style: ButtonStyle.Link)
+                .WithButton("Owner", url: $"https://github.com/{response.Owner.Login}", style: ButtonStyle.Link)
+                .Build());
     }
 
     [SlashCommand("user", "Get information about a user")]
     public async Task UserAsync([Summary("user", "Github user")] string user)
     {
-        var response = await Utilities.Request<User>(new Url(BaseUrl).AppendPathSegments("users", user),
-            Config.Bot.UserAgent);
-        if (response.IsInvalid())
+        await DeferAsync();
+
+        var response = await $"{BaseUrl}/users/{user}".Request<User>(OtherConfig.UserAgent);
+        if (response.IsDefault())
         {
-            await Context.ErrorResponse("Failed to get user information");
+            await Context.ErrorResponse("Failed to get user information", true);
             return;
         }
 
@@ -103,34 +87,34 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
                          $"**Followers:** {response.Followers}\n" +
                          $"**Following:** {response.Following}";
 
-        var embed = new EmbedBuilder()
-            .WithColor(Config.Bot.EmbedColor)
-            .WithTitle("__User Information__")
-            .WithThumbnailUrl(response.AvatarUrl)
-            .AddField(":zap: **Main**", mainField)
-            .AddField(":bar_chart: **Statistics**", statsField)
-            .Build();
-
-        var buttons = response.TwitterUsername.IsInvalid()
-            ? new ComponentBuilder()
-                .WithButton("Github", url: response.HtmlUrl, style: ButtonStyle.Link)
-                .Build()
-            : new ComponentBuilder()
-                .WithButton("Github", url: response.HtmlUrl, style: ButtonStyle.Link)
-                .WithButton("Twitter", url: $"https://twitter.com/{response.TwitterUsername}", style: ButtonStyle.Link)
-                .Build();
-
-        await RespondAsync(embed: embed, components: buttons);
+        await FollowupAsync(
+            embed: new EmbedBuilder()
+                .WithColor(BotConfig.EmbedColor)
+                .WithTitle("__User Information__")
+                .WithThumbnailUrl(response.AvatarUrl)
+                .AddField(":zap: **Main**", mainField)
+                .AddField(":bar_chart: **Statistics**", statsField)
+                .Build(),
+            components: response.TwitterUsername.IsNullOrEmpty()
+                ? new ComponentBuilder()
+                    .WithButton("Github", url: response.HtmlUrl, style: ButtonStyle.Link)
+                    .Build()
+                : new ComponentBuilder()
+                    .WithButton("Github", url: response.HtmlUrl, style: ButtonStyle.Link)
+                    .WithButton("Twitter", url: $"https://twitter.com/{response.TwitterUsername}",
+                        style: ButtonStyle.Link)
+                    .Build());
     }
 
     [SlashCommand("gist", "Get information about a gist")]
     public async Task GistAsync([Summary("user", "Github user")] string user)
     {
-        var response = await Utilities.Request<Gist[]>(new Url(BaseUrl).AppendPathSegments("users", user, "gists"),
-            Config.Bot.UserAgent);
-        if (response.IsInvalid())
+        await DeferAsync();
+
+        var response = await $"{BaseUrl}/users/{user}/gists".Request<Gist[]>(OtherConfig.UserAgent);
+        if (response.IsDefault())
         {
-            await Context.ErrorResponse("Failed to get gist information or user has no gists");
+            await Context.ErrorResponse("Failed to get gist information or user has no gists", true);
             return;
         }
 
@@ -138,33 +122,48 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
 
         var userField = $"**Username:** {content.Owner.Login}\n" +
                         $"**ID:** {content.Owner.Id}\n" +
-                        $"**Type:** {content.Owner.Type}\n";
+                        $"**Type:** {content.Owner.Type}";
 
         var latestGistField = $"**Description:** {content.Description.OrElse("No description")}\n" +
                               $"**ID:** {content.Id}\n" +
-                              $"**Comments:** {content.Comments}\n";
+                              $"**Comments:** {content.Comments}";
 
-        var embed = new EmbedBuilder()
-            .WithColor(Config.Bot.EmbedColor)
-            .WithTitle("__Gist Information__")
-            .WithThumbnailUrl(content.Owner.AvatarUrl)
-            .AddField(":bust_in_silhouette: **User**", userField)
-            .AddField(":1234: **Number of Gists**", response.Length.ToString())
-            .AddField(":arrow_up: **Latest Gist**", latestGistField)
-            .Build();
-
-        var buttons = new ComponentBuilder()
-            .WithButton("Open user Gists", url: $"https://gist.github.com/{user}", style: ButtonStyle.Link)
-            .WithButton("Open user profile", url: content.Owner.HtmlUrl, style: ButtonStyle.Link)
-            .WithButton("Open latest Gist", url: content.HtmlUrl, style: ButtonStyle.Link)
-            .Build();
-
-        await RespondAsync(embed: embed, components: buttons);
+        await FollowupAsync(
+            embed: new EmbedBuilder()
+                .WithColor(BotConfig.EmbedColor)
+                .WithTitle("__Gist Information__")
+                .WithThumbnailUrl(content.Owner.AvatarUrl)
+                .AddField(":bust_in_silhouette: **User**", userField)
+                .AddField(":1234: **Number of Gists**", response.Length.ToString())
+                .AddField(":arrow_up: **Latest Gist**", latestGistField)
+                .Build(),
+            components: new ComponentBuilder()
+                .WithButton("Open user Gists", url: $"https://gist.github.com/{user}", style: ButtonStyle.Link)
+                .WithButton("Open user profile", url: content.Owner.HtmlUrl, style: ButtonStyle.Link)
+                .WithButton("Open latest Gist", url: content.HtmlUrl, style: ButtonStyle.Link)
+                .Build());
     }
 
-    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
-    [SuppressMessage("ReSharper", "PropertyCanBeMadeInitOnly.Local")]
-    [SuppressMessage("ReSharper", "MemberHidesStaticFromOuterClass")]
+    private static async Task<string> GetLicense(string key)
+    {
+        var response = await $"{BaseUrl}/licenses/{key}".Request<License>(OtherConfig.UserAgent);
+        if (response.IsDefault())
+            return "No license";
+
+        return $"**Name:** {response.Name}\n" +
+               $"**Permissions:** {FormatArray(response.Permissions)}\n" +
+               $"**Conditions:** {FormatArray(response.Conditions)}\n" +
+               $"**Limitations:** {FormatArray(response.Limitations)}\n";
+    }
+
+    private static string FormatArray(IEnumerable<string> array)
+    {
+        var formatted = array
+            .Select(x => x.Capitalize())
+            .Select(x => x.Replace("-", " "));
+        return string.Join(", ", formatted);
+    }
+
     private struct Repository
     {
         public int Id { get; set; }
@@ -176,7 +175,9 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
         [JsonProperty("stargazers_count")] public int StargazersCount { get; set; }
         [JsonProperty("watchers_count")] public int WatchersCount { get; set; }
         [JsonProperty("forks_count")] public int ForksCount { get; set; }
-        public InternalOwner Owner { get; set; }
+        public InternalOwner Owner { get; init; }
+
+        // ReSharper disable once MemberHidesStaticFromOuterClass
         public InternalLicense? License { get; set; }
 
         internal struct InternalOwner
@@ -187,13 +188,13 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
             [JsonProperty("avatar_url")] public string AvatarUrl { get; set; }
         }
 
+        // ReSharper disable once MemberCanBePrivate.Local
         internal struct InternalLicense
         {
             public string Key { get; set; }
         }
     }
 
-    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
     private struct License
     {
         public string Name { get; set; }
@@ -202,7 +203,6 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
         public string[] Limitations { get; set; }
     }
 
-    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
     private struct User
     {
         public string Login { get; set; }
@@ -222,15 +222,13 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
         [JsonProperty("html_url")] public string HtmlUrl { get; set; }
     }
 
-    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
-    [SuppressMessage("ReSharper", "PropertyCanBeMadeInitOnly.Local")]
     private struct Gist
     {
         [JsonProperty("html_url")] public string HtmlUrl { get; set; }
         public string Description { get; set; }
         public string Id { get; set; }
         public int Comments { get; set; }
-        public InternalOwner Owner { get; set; }
+        public InternalOwner Owner { get; init; }
 
         internal struct InternalOwner
         {
@@ -240,16 +238,5 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
             [JsonProperty("html_url")] public string HtmlUrl { get; set; }
             public string Type { get; set; }
         }
-    }
-}
-
-internal static class GithubCommandExtensions
-{
-    internal static string ArrayFormat(this IEnumerable<string> array)
-    {
-        var formatted = array
-            .Select(x => x.Capitalize())
-            .Select(x => x.Replace("-", " "));
-        return string.Join(", ", formatted);
     }
 }

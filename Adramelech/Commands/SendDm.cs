@@ -1,4 +1,6 @@
-﻿using Discord;
+﻿using Adramelech.Configuration;
+using Adramelech.Extensions;
+using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 
@@ -22,12 +24,12 @@ public class SendDm : InteractionModuleBase<SocketInteractionContext<SocketSlash
             return;
         }
 
-        var embed = new EmbedBuilder()
-            .WithColor(Config.Bot.EmbedColor)
-            .WithTitle("__DM Sent__")
-            .WithDescription("Message sent successfully")
-            .Build();
-        
-        await RespondAsync(embed: embed, ephemeral: true);
+        await RespondAsync(
+            embed: new EmbedBuilder()
+                .WithColor(BotConfig.EmbedColor)
+                .WithTitle("__DM Sent__")
+                .WithDescription("Message sent successfully")
+                .Build(),
+            ephemeral: true);
     }
 }

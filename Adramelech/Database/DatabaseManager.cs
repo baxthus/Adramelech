@@ -1,13 +1,10 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Bson.Serialization.Conventions;
+﻿using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using Serilog;
 
-namespace Adramelech;
+namespace Adramelech.Database;
 
-public static class Database
+public static class DatabaseManager
 {
     private static MongoClient Client { get; set; } = null!;
     private static IMongoDatabase ConfigDb { get; set; } = null!;
@@ -15,12 +12,12 @@ public static class Database
     public static IMongoCollection<ConfigSchema> Config { get; private set; } = null!;
     public static IMongoCollection<MusicSchema> Music { get; private set; } = null!;
 
-    public static void CreateConnection()
+    public static void Connect()
     {
-        // Setup camelCase convention, because the C# and MongoDB naming conventions are different.
+        // Setup camelCase convention, because the C# and MongoDB naming conventions are different
         var camelCaseConvention = new ConventionPack { new CamelCaseElementNameConvention() };
         ConventionRegistry.Register("camelCase", camelCaseConvention, _ => true);
-        
+
         var connectionString = Environment.GetEnvironmentVariable("MONGODB_CONNECTION_STRING");
         if (string.IsNullOrEmpty(connectionString))
         {
@@ -30,8 +27,12 @@ public static class Database
 
         var settings = MongoClientSettings.FromConnectionString(connectionString);
         settings.ServerApi = new ServerApi(ServerApiVersion.V1);
+#if DEBUG
+        // Workaround for my shitty computer
+        settings.AllowInsecureTls = true;
+#endif
 
-        // Using a try catch here because a lot of things can go wrong and I don't want to deal with them (basically my life).
+        // Using a try catch here because a lot of things can go wrong and I don't want to deal with them (basically my life)
         try
         {
             Client = new MongoClient(settings);
@@ -45,30 +46,7 @@ public static class Database
             Log.Fatal(e, "Failed to connect to MongoDB.");
             Environment.Exit(1);
         }
-        
+
         Log.Debug("Opened database connection, Database: {Database}", ConfigDb.DatabaseNamespace.DatabaseName);
-    }
-
-
-    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
-    public struct ConfigSchema
-    {
-        // ReSharper disable once UnusedMember.Global
-        public ObjectId Id { get; set; }
-        public string Key { get; set; }
-        public string Value { get; set; }
-    }
-
-    [SuppressMessage("ReSharper", "PropertyCanBeMadeInitOnly.Global")]
-    public struct MusicSchema
-    {
-        // ReSharper disable once UnusedAutoPropertyAccessor.Global
-        public ObjectId Id { get; set; }
-        [BsonElement("title")]
-        public string Title { get; set; }
-        public string Album { get; set; }
-        public string Artist { get; set; }
-        public string Url { get; set; }
-        public bool Favorite { get; set; }
     }
 }

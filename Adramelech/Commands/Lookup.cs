@@ -1,9 +1,10 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
+using Adramelech.Configuration;
+using Adramelech.Extensions;
+using Adramelech.Utilities;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using Flurl;
 using Newtonsoft.Json;
 
 namespace Adramelech.Commands;
@@ -13,23 +14,26 @@ public class Lookup : InteractionModuleBase<SocketInteractionContext<SocketSlash
     [SlashCommand("lookup", "Look up a ip or domain")]
     public async Task LookupAsync([Summary("local", "Address to lookup (ip or domain)")] string local)
     {
-        var ip = LookupCommandExtensions.IpRegex().Match(local).Success
+        await DeferAsync();
+
+        var ip = LookupHelper.IpRegex().Match(local).Success
             ? local
             : await GetIpFromDomain(local);
-        if (ip.IsInvalid())
+        if (ip.IsNullOrEmpty())
         {
-            await Context.ErrorResponse("Invalid ip");
+            await Context.ErrorResponse("Invalid ip", true);
             return;
         }
 
-        var response = await Utilities.Request<Whois>($"https://ipwho.is/{ip}", "curl");
-        if (response.IsInvalid() || !response.Success)
+        var response = await $"https://ipwho.is/{ip}".Request<Whois>("curl");
+        if (response.IsDefault() || !response.Success)
         {
-            await Context.ErrorResponse("Error while looking up ip");
+            await Context.ErrorResponse("Error while looking up ip", true);
             return;
         }
 
         var domain = local != ip ? local : "None";
+
         var mainField = $"**IP:** {ip}\n" +
                         $"**Domain:** {domain}\n" +
                         $"**Type:** {response.Type}";
@@ -51,49 +55,42 @@ public class Lookup : InteractionModuleBase<SocketInteractionContext<SocketSlash
                             $"**UTC:** {response.Timezone.Utc}\n" +
                             $"**Offset:** {response.Timezone.Offset}";
 
-        var embed = new EmbedBuilder()
-            .WithColor(Config.Bot.EmbedColor)
-            .WithDescription("For the best results, search by IP")
-            .AddField(":zap: **Main**", mainField)
-            .AddField(":earth_americas: **Location**", locationField)
-            .AddField(":satellite: **Connection**", connectionField)
-            .AddField(":clock1: **Timezone**", timezoneField)
-            .WithFooter("Powered by ipwhois.io")
-            .Build();
+        var mapsUrl = $"https://www.google.com/maps/search/?api=1&query={response.Latitude},{response.Longitude}";
 
-        var mapsUrl = new Url("https://www.google.com")
-            .AppendPathSegments("maps", "search", "/")
-            .SetQueryParam("api", 1)
-            .SetQueryParam("query", $"{response.Latitude},{response.Longitude}");
-
-        var button = new ComponentBuilder()
-            // Emoji is :earth_americas:
-            .WithButton("Maps", url: mapsUrl, style: ButtonStyle.Link, emote: new Emoji("\uD83C\uDF0E"))
-            .Build();
-
-        await RespondAsync(embed: embed, components: button);
+        await FollowupAsync(
+            embed: new EmbedBuilder()
+                .WithColor(BotConfig.EmbedColor)
+                .WithDescription("For the best results, search by IP")
+                .AddField(":zap: **Main**", mainField)
+                .AddField(":earth_americas: **Location**", locationField)
+                .AddField(":satellite: **Connection**", connectionField)
+                .AddField(":clock1: **Timezone**", timezoneField)
+                .WithFooter("Powered by ipwhois.io")
+                .Build(),
+            components: new ComponentBuilder()
+                // Emoji is :earth_americas:
+                .WithButton("Maps", url: mapsUrl, style: ButtonStyle.Link, emote: new Emoji("\uD83C\uDF0E"))
+                .Build());
     }
 
     private async Task<string?> GetIpFromDomain(string domain)
     {
-        var response = await Utilities.Request<string>($"https://da.gd/host/{domain}");
-        if (response.IsInvalid())
+        var response = await $"https://da.gd/host/{domain}".Request<string>();
+        if (response.IsNullOrEmpty())
         {
-            await Context.ErrorResponse("Invalid domain");
+            await Context.ErrorResponse("Invalid domain", true);
             return null;
         }
 
-        var ip = response!.Replace("\n", "");
+        response = response!.Replace("\n", "");
 
-        if (!ip.StartsWith("No"))
-            return ip.Contains(',') ? ip[..ip.IndexOf(',')] : ip;
+        if (!response.StartsWith("No"))
+            return response.Contains(',') ? response[..response.IndexOf(',')] : response;
 
-        await Context.ErrorResponse("No ip found for domain");
+        await Context.ErrorResponse("No ip found for domain", true);
         return null;
     }
 
-    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Local")]
-    [SuppressMessage("ReSharper", "PropertyCanBeMadeInitOnly.Local")]
     private struct Whois
     {
         public bool Success { get; set; }
@@ -106,8 +103,8 @@ public class Lookup : InteractionModuleBase<SocketInteractionContext<SocketSlash
         public string Latitude { get; set; }
         public string Longitude { get; set; }
         public string Postal { get; set; }
-        public InternalConnection Connection { get; set; }
-        public InternalTimezone Timezone { get; set; }
+        public InternalConnection Connection { get; init; }
+        public InternalTimezone Timezone { get; init; }
 
         internal struct InternalConnection
         {
@@ -127,7 +124,7 @@ public class Lookup : InteractionModuleBase<SocketInteractionContext<SocketSlash
 }
 
 // ReSharper disable once ClassNeverInstantiated.Global
-internal partial class LookupCommandExtensions
+internal partial class LookupHelper
 {
     [GeneratedRegex(@"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b")]
     public static partial Regex IpRegex();
