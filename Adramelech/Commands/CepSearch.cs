@@ -5,7 +5,6 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Flurl;
-using Serilog;
 
 namespace Adramelech.Commands;
 
@@ -23,7 +22,7 @@ public class CepSearch : InteractionModuleBase<SocketInteractionContext<SocketSl
             return;
         }
 
-        if (!response.Name.IsNullOrEmpty())
+        if (response.Name is not null)
         {
             var errors = "**Errors:**\n" +
                          $"**Name:** `{response.Name}`\n" +
@@ -50,12 +49,10 @@ public class CepSearch : InteractionModuleBase<SocketInteractionContext<SocketSl
             .SetQueryParam("api", 1);
 
         // If the coordinates are invalid, search for the street, city and state
-        if (response.Location.Coordinates.Latitude.IsNullOrEmpty() ||
-            response.Location.Coordinates.Longitude.IsNullOrEmpty())
-            mapsUrl.SetQueryParam("query", $"{response.Street}, {response.City}, {response.State}");
-        else
-            mapsUrl.SetQueryParam("query",
-                $"{response.Location.Coordinates.Latitude},{response.Location.Coordinates.Longitude}");
+        mapsUrl.SetQueryParam("query",
+            response.Location.Coordinates is { Latitude: null, Longitude: null }
+                ? $"{response.Street}, {response.City}, {response.State}"
+                : $"{response.Location.Coordinates.Latitude},{response.Location.Coordinates.Longitude}");
 
         await FollowupAsync(
             embed: new EmbedBuilder()

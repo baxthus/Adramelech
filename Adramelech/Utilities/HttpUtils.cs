@@ -1,5 +1,4 @@
 ﻿using System.Text;
-using Serilog;
 
 namespace Adramelech.Utilities;
 
@@ -21,11 +20,11 @@ public static class HttpUtils
     {
         using HttpClient client = new();
 
-        if (userAgent != null)
+        if (userAgent is not null)
             client.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
 
         var response = await client.GetAsync(url);
-        if (!response!.IsSuccessStatusCode)
+        if (!response.IsSuccessStatusCode)
             return default;
 
         var content = await response.Content.ReadAsStringAsync();

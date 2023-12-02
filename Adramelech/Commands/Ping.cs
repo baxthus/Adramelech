@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Adramelech.Configuration;
+using Adramelech.Extensions;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -37,13 +38,18 @@ public class Velocity : InteractionModuleBase<SocketInteractionContext<SocketMes
 
         await Context.Interaction.UpdateAsync(p =>
         {
-            p.Embed = new EmbedBuilder()
+            p.Components = new ComponentBuilder()
+                .WithButton("Velocity", "velocity", style: ButtonStyle.Success, disabled: true)
+                .WithButton("Author", style: ButtonStyle.Link, url: "https://abysmal.eu.org")
+                .Build();
+        });
+
+        await ReplyAsync(
+            embed: new EmbedBuilder()
                 .WithColor(BotConfig.EmbedColor)
                 .WithTitle("__Adramelech Velocity Test__")
                 .WithDescription($"Response time from our servers to Discord is {timer.ElapsedMilliseconds}ms")
-                .Build();
-            // This will remove the buttons from the message
-            p.Components = new ComponentBuilder().Build();
-        });
+                .Build(),
+            messageReference: Context.MessageReference());
     }
 }

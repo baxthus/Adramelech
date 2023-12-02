@@ -6,15 +6,15 @@ namespace Adramelech.Database;
 
 public static class DatabaseManager
 {
-    private static MongoClient Client { get; set; } = null!;
-    private static IMongoDatabase ConfigDb { get; set; } = null!;
-    private static IMongoDatabase GeneralDb { get; set; } = null!;
+    private static MongoClient? Client { get; set; }
+    private static IMongoDatabase? ConfigDb { get; set; }
+    private static IMongoDatabase? GeneralDb { get; set; }
     public static IMongoCollection<ConfigSchema> Config { get; private set; } = null!;
     public static IMongoCollection<MusicSchema> Music { get; private set; } = null!;
 
     public static void Connect()
     {
-        // Setup camelCase convention, because the C# and MongoDB naming conventions are different
+        // Register camelCase convention for MongoDB
         var camelCaseConvention = new ConventionPack { new CamelCaseElementNameConvention() };
         ConventionRegistry.Register("camelCase", camelCaseConvention, _ => true);
 
@@ -27,6 +27,7 @@ public static class DatabaseManager
 
         var settings = MongoClientSettings.FromConnectionString(connectionString);
         settings.ServerApi = new ServerApi(ServerApiVersion.V1);
+
 #if DEBUG
         // Workaround for my shitty computer
         settings.AllowInsecureTls = true;
@@ -48,5 +49,6 @@ public static class DatabaseManager
         }
 
         Log.Debug("Opened database connection, Database: {Database}", ConfigDb.DatabaseNamespace.DatabaseName);
+        Log.Debug("Opened database connection, Database: {Database}", GeneralDb.DatabaseNamespace.DatabaseName);
     }
 }

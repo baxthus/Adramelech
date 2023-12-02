@@ -19,7 +19,7 @@ public class Anime : InteractionModuleBase<SocketInteractionContext<SocketSlashC
         [SlashCommand("image", "Get a random anime image")]
         public async Task ImageAsync(
             [Summary("age-rating", "The age rating of the image")] [Choice("SFW", "SFW")] [Choice("NSFW", "NSFW")]
-            string ageRating)
+            string ageRating = "SFW")
         {
             await DeferAsync();
 
@@ -73,6 +73,25 @@ public class Anime : InteractionModuleBase<SocketInteractionContext<SocketSlashC
                 .Build());
         }
 
+        [SlashCommand("neko", "Get a random neko image")]
+        public async Task NekoAsync()
+        {
+            await DeferAsync();
+
+            var response = await "https://nekos.life/api/v2/img/neko".Request<NekosLifeResponse>();
+            if (response.IsDefault())
+            {
+                await Context.ErrorResponse("Error while fetching neko image", true);
+                return;
+            }
+
+            await FollowupAsync(embed: new EmbedBuilder()
+                .WithColor(BotConfig.EmbedColor)
+                .WithImageUrl(response.Url)
+                .WithFooter("Powered by nekos.life")
+                .Build());
+        }
+
         private struct NekosApiResponse
         {
             public Item[] Items { get; set; }
@@ -82,6 +101,11 @@ public class Anime : InteractionModuleBase<SocketInteractionContext<SocketSlashC
                 [JsonProperty("image_url")] public string ImageUrl { get; set; }
                 public string? Source { get; set; }
             }
+        }
+
+        private struct NekosLifeResponse
+        {
+            public string Url { get; set; }
         }
     }
 }

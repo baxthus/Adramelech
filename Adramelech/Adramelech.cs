@@ -16,7 +16,7 @@ public class Adramelech
     public static Task Main() => new Adramelech().MainAsync();
 
     private DiscordSocketClient _client = null!;
-    private InteractionService _commands = null!;
+    private InteractionService _interactionService = null!;
 
     private async Task MainAsync()
     {
@@ -31,35 +31,32 @@ public class Adramelech
         var services = ConfigureServices();
 
         _client = services.GetRequiredService<DiscordSocketClient>();
-        _commands = services.GetRequiredService<InteractionService>();
+        _interactionService = services.GetRequiredService<InteractionService>();
 
         _client.Log += LogAsync;
-        _commands.Log += LogAsync;
-
-        _client.Ready += Ready;
+        _interactionService.Log += LogAsync;
 
         await _client.SetActivityAsync(BotConfig.Activity);
 
         await _client.LoginAsync(TokenType.Bot, BotConfig.Instance.Token);
         await _client.StartAsync();
 
-        await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), services);
+        await _interactionService.AddModulesAsync(Assembly.GetEntryAssembly(), services);
 
-        services.GetRequiredService<InteractionHandler>().InitializeAsync();
+        services.GetRequiredService<InteractionHandler>().Initialize();
         services.GetRequiredService<CommandHandler>().Initialize();
+        services.GetRequiredService<ReadyHandler>().Initialize();
 
         await Task.Delay(-1);
     }
 
-    private static ServiceProvider ConfigureServices()
-    {
-        return new ServiceCollection()
-            .AddSingleton<DiscordSocketClient>()
-            .AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>()))
-            .AddSingleton<InteractionHandler>()
-            .AddSingleton<CommandHandler>()
-            .BuildServiceProvider();
-    }
+    private static ServiceProvider ConfigureServices() => new ServiceCollection()
+        .AddSingleton<DiscordSocketClient>()
+        .AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>()))
+        .AddSingleton<InteractionHandler>()
+        .AddSingleton<CommandHandler>()
+        .AddSingleton<ReadyHandler>()
+        .BuildServiceProvider();
 
     private static async Task LogAsync(LogMessage msg)
     {
@@ -77,13 +74,5 @@ public class Adramelech
         Log.Write(severity, msg.Exception, "[{Source}] {Message}", msg.Source, msg.Message);
 
         await Task.CompletedTask;
-    }
-
-    private async Task Ready()
-    {
-        await _commands.RegisterCommandsGloballyAsync();
-
-        Log.Information($"Connected as {_client.CurrentUser.Username}#{_client.CurrentUser.Discriminator}");
-        Log.Information("Activity: {Type} {Name}", _client.Activity.Type, _client.Activity.Name);
     }
 }

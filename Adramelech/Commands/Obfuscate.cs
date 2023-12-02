@@ -6,7 +6,6 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using Serilog;
 
 namespace Adramelech.Commands;
 

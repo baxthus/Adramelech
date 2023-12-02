@@ -6,18 +6,19 @@ namespace Adramelech.Services;
 
 public class CommandHandler
 {
-    private readonly InteractionService _commands;
+    private readonly InteractionService _interactionService;
 
-    public CommandHandler(InteractionService commands) => _commands = commands;
+    public CommandHandler(InteractionService interactionService) => _interactionService = interactionService;
 
-    public void Initialize() => _commands.SlashCommandExecuted += SlashCommandExecuted;
+    public void Initialize() => _interactionService.SlashCommandExecuted += SlashCommandExecuted;
 
-    private static Task SlashCommandExecuted(SlashCommandInfo arg1, IInteractionContext arg2, IResult arg3)
+    private static Task SlashCommandExecuted(SlashCommandInfo commandInfo, IInteractionContext interaction,
+        IResult result)
     {
-        if (arg3.IsSuccess) return Task.CompletedTask;
+        if (result.IsSuccess) return Task.CompletedTask;
 
-        Log.Error("Error while executing slash command: {ErrorReason}", arg3.ErrorReason);
-        Log.Error(arg3.ErrorReason);
+        Log.Error("Error while executing slash command: {ErrorReason}", result.ErrorReason);
+        Log.Error(result.ErrorReason);
 
         return Task.CompletedTask;
     }

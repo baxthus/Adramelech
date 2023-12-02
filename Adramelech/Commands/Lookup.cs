@@ -21,7 +21,7 @@ public class Lookup : InteractionModuleBase<SocketInteractionContext<SocketSlash
             : await GetIpFromDomain(local);
         if (ip.IsNullOrEmpty())
         {
-            await Context.ErrorResponse("Invalid ip", true);
+            await Context.ErrorResponse("Failed to lookup ip", true);
             return;
         }
 
@@ -73,21 +73,17 @@ public class Lookup : InteractionModuleBase<SocketInteractionContext<SocketSlash
                 .Build());
     }
 
-    private async Task<string?> GetIpFromDomain(string domain)
+    private static async Task<string?> GetIpFromDomain(string domain)
     {
         var response = await $"https://da.gd/host/{domain}".Request<string>();
         if (response.IsNullOrEmpty())
-        {
-            await Context.ErrorResponse("Invalid domain", true);
             return null;
-        }
 
-        response = response!.Replace("\n", "");
+        response = response!.Trim();
 
         if (!response.StartsWith("No"))
             return response.Contains(',') ? response[..response.IndexOf(',')] : response;
 
-        await Context.ErrorResponse("No ip found for domain", true);
         return null;
     }
 

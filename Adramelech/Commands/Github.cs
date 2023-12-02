@@ -1,4 +1,5 @@
-﻿using Adramelech.Configuration;
+﻿using System.Text;
+using Adramelech.Configuration;
 using Adramelech.Extensions;
 using Adramelech.Utilities;
 using Discord.Interactions;
@@ -11,7 +12,7 @@ namespace Adramelech.Commands;
 [Group("github", "Get Github related information")]
 public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
-    private const string BaseUrl = "https://api.github.com";
+    public const string BaseUrl = "https://api.github.com";
 
     [SlashCommand("repo", "Get information about a repository")]
     public async Task RepoAsync([Summary("user", "Github user")] string user,
@@ -40,9 +41,12 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
                          $"**ID:** {response.Owner.Id}\n" +
                          $"**Type:** {response.Owner.Type}\n";
 
-        var licenseField = response.License is not null
-            ? await GetLicense(response.License?.Key!)
-            : "No license";
+        var licenseField = response.License switch
+        {
+            null => "No license",
+            { Key: "other" } => "Other",
+            _ => await GetLicense(response.License?.Key!)
+        };
 
         await FollowupAsync(
             embed: new EmbedBuilder()
@@ -71,21 +75,26 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
             return;
         }
 
+        var (socials, socialsField) = await GetSocials(user);
+
         var mainField = $"**Username:** {response.Login}\n" +
                         $"**ID:** {response.Id}\n" +
                         $"**Type:** {response.Type}\n" +
-                        $"**Name:** {response.Name.OrElse("N/A")}\n" +
-                        $"**Company:** {response.Company.OrElse("N/A")}\n" +
-                        $"**Website:** {response.Blog.OrElse("N/A")}\n" +
-                        $"**Location:** {response.Location.OrElse("N/A")}\n" +
-                        $"**Bio:** {response.Bio.OrElse("N/A")}\n" +
-                        $"**Twitter:** {response.TwitterUsername.OrElse("N/A")}";
+                        $"**Name:** {response.Name ?? "N/A"}\n" +
+                        $"**Company:** {response.Company ?? "N/A"}\n" +
+                        $"**Website:** {response.Blog ?? "N/A"}\n" +
+                        $"**Location:** {response.Location ?? "N/A"}\n" +
+                        $"**Bio:** {response.Bio ?? "N/A"}\n";
 
 
         var statsField = $"**Public Repos:** {response.PublicRepos}\n" +
                          $"**Public Gists:** {response.PublicGists}\n" +
                          $"**Followers:** {response.Followers}\n" +
                          $"**Following:** {response.Following}";
+
+        ComponentBuilder components = new();
+        components.WithButton("Github", url: response.HtmlUrl, style: ButtonStyle.Link);
+        socials.ForEach(x => components.WithButton(x.Provider.Capitalize(), url: x.Url, style: ButtonStyle.Link));
 
         await FollowupAsync(
             embed: new EmbedBuilder()
@@ -94,16 +103,9 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
                 .WithThumbnailUrl(response.AvatarUrl)
                 .AddField(":zap: **Main**", mainField)
                 .AddField(":bar_chart: **Statistics**", statsField)
+                .AddField(":link: **Socials**", socialsField)
                 .Build(),
-            components: response.TwitterUsername.IsNullOrEmpty()
-                ? new ComponentBuilder()
-                    .WithButton("Github", url: response.HtmlUrl, style: ButtonStyle.Link)
-                    .Build()
-                : new ComponentBuilder()
-                    .WithButton("Github", url: response.HtmlUrl, style: ButtonStyle.Link)
-                    .WithButton("Twitter", url: $"https://twitter.com/{response.TwitterUsername}",
-                        style: ButtonStyle.Link)
-                    .Build());
+            components: components.Build());
     }
 
     [SlashCommand("gist", "Get information about a gist")]
@@ -139,16 +141,31 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
                 .Build(),
             components: new ComponentBuilder()
                 .WithButton("Open user Gists", url: $"https://gist.github.com/{user}", style: ButtonStyle.Link)
-                .WithButton("Open user profile", url: content.Owner.HtmlUrl, style: ButtonStyle.Link)
+                .WithButton("Open user Github", url: content.Owner.HtmlUrl, style: ButtonStyle.Link)
                 .WithButton("Open latest Gist", url: content.HtmlUrl, style: ButtonStyle.Link)
+                // TODO: Add a "get all gists" button
                 .Build());
+    }
+
+    private static async Task<(List<Social>, string)> GetSocials(string user)
+    {
+        var response = await $"{BaseUrl}/users/{user}/social_accounts".Request<Social[]>(OtherConfig.UserAgent);
+        if (response.IsDefault())
+            return (new List<Social>(), "No socials found");
+
+        StringBuilder builder = new();
+
+        foreach (var social in response!)
+            builder.AppendLine($"**{social.Provider.Capitalize()}:** {social.Url}");
+
+        return (response.ToList(), builder.ToString().TrimEnd('\n'));
     }
 
     private static async Task<string> GetLicense(string key)
     {
         var response = await $"{BaseUrl}/licenses/{key}".Request<License>(OtherConfig.UserAgent);
         if (response.IsDefault())
-            return "No license";
+            return "Failed to get license information";
 
         return $"**Name:** {response.Name}\n" +
                $"**Permissions:** {FormatArray(response.Permissions)}\n" +
@@ -156,13 +173,10 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
                $"**Limitations:** {FormatArray(response.Limitations)}\n";
     }
 
-    private static string FormatArray(IEnumerable<string> array)
-    {
-        var formatted = array
+    private static string FormatArray(IEnumerable<string> array) =>
+        string.Join(", ", array
             .Select(x => x.Capitalize())
-            .Select(x => x.Replace("-", " "));
-        return string.Join(", ", formatted);
-    }
+            .Select(x => x.Replace("-", " ")));
 
     private struct Repository
     {
@@ -213,7 +227,6 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
         public string? Blog { get; set; }
         public string? Location { get; set; }
         public string? Bio { get; set; }
-        [JsonProperty("twitter_username")] public string? TwitterUsername { get; set; }
         [JsonProperty("public_repos")] public int PublicRepos { get; set; }
         [JsonProperty("public_gists")] public int PublicGists { get; set; }
         public int Followers { get; set; }
@@ -222,7 +235,7 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
         [JsonProperty("html_url")] public string HtmlUrl { get; set; }
     }
 
-    private struct Gist
+    public struct Gist
     {
         [JsonProperty("html_url")] public string HtmlUrl { get; set; }
         public string Description { get; set; }
@@ -230,7 +243,7 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
         public int Comments { get; set; }
         public InternalOwner Owner { get; init; }
 
-        internal struct InternalOwner
+        public struct InternalOwner
         {
             public string Login { get; set; }
             public int Id { get; set; }
@@ -238,5 +251,11 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
             [JsonProperty("html_url")] public string HtmlUrl { get; set; }
             public string Type { get; set; }
         }
+    }
+
+    private struct Social
+    {
+        public string Provider { get; set; }
+        public string Url { get; set; }
     }
 }

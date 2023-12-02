@@ -16,7 +16,7 @@ public class DnsLookup : InteractionModuleBase<SocketInteractionContext<SocketSl
         await DeferAsync();
 
         var response = await $"https://da.gd/dns/{domain}".Request<string>();
-        if (response is null || response.Replace("\n", "").IsNullOrEmpty())
+        if (response.IsNullOrEmpty())
         {
             await Context.ErrorResponse("Invalid domain", true);
             return;

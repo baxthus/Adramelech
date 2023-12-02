@@ -26,7 +26,7 @@ public class BotConfig
             Log.Fatal("Token not found in database.");
             Environment.Exit(1);
         }
-        
+
         Token = botToken;
     }
 }

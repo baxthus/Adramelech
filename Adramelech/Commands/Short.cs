@@ -15,7 +15,7 @@ public class Short : InteractionModuleBase<SocketInteractionContext<SocketSlashC
         await DeferAsync();
 
         var response = await $"https://is.gd/create.php?format=simple&url={url}".Request<string>();
-        if (response.IsNullOrEmpty() || response!.Replace("\n", "").StartsWith("Error"))
+        if (response.IsNullOrEmpty() || response!.Trim().StartsWith("Error"))
         {
             await Context.ErrorResponse("Error shortening URL", true);
             return;

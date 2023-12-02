@@ -27,7 +27,7 @@ public class Covid : InteractionModuleBase<SocketInteractionContext<SocketSlashC
             return;
         }
 
-        if (!response.Message.IsNullOrEmpty())
+        if (response.Message is not null)
         {
             await Context.ErrorResponse($"`{response.Message}`", true);
             return;

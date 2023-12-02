@@ -19,7 +19,7 @@ public class InteractionHandler
         _services = services;
     }
 
-    public void InitializeAsync() => _client.InteractionCreated += HandleInteraction;
+    public void Initialize() => _client.InteractionCreated += HandleInteraction;
 
     private async Task HandleInteraction(SocketInteraction interaction)
     {

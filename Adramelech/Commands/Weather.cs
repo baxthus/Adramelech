@@ -29,7 +29,7 @@ public class Weather : InteractionModuleBase<SocketInteractionContext<SocketSlas
             .SetQueryParam("appid", ServicesConfig.Instance.OpenWeatherKey)
             .ToString()!
             .Request<OpenWeatherGeo[]>();
-        if (coordinates is null)
+        if (coordinates.IsDefault())
         {
             await Context.ErrorResponse("Error getting coordinates", true);
             return;
@@ -67,7 +67,7 @@ public class Weather : InteractionModuleBase<SocketInteractionContext<SocketSlas
                         $"**Direction:** {weather.Wind.Deg}º\n" +
                         $"**Gust:** {weather.Wind.Gust}m/s";
 
-        var place = weather.Name.IsInvalid() ? string.Empty : $" in {weather.Name}";
+        var place = weather.Name.IsNullOrEmpty() ? string.Empty : $" in {weather.Name}";
 
         await FollowupAsync(embed: new EmbedBuilder()
             .WithColor(BotConfig.EmbedColor)
