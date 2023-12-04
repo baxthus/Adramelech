@@ -1,6 +1,6 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Adramelech", "Adramelech\Adramelech.csproj", "{11EBFD9A-8D9F-4078-A100-2146EE7D4C25}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Adramelech", "Adramelech\Adramelech.csproj", "{11EBFD9A-8D9F-4078-A100-2146EE7D4C25}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
