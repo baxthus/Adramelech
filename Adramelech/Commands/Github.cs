@@ -143,7 +143,11 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
                 .WithButton("Open user Gists", url: $"https://gist.github.com/{user}", style: ButtonStyle.Link)
                 .WithButton("Open user Github", url: content.Owner.HtmlUrl, style: ButtonStyle.Link)
                 .WithButton("Open latest Gist", url: content.HtmlUrl, style: ButtonStyle.Link)
-                // TODO: Add a "get all gists" button
+                // This is just so I can get the user in the callback without having to storing it server side
+                .AddRow(new ActionRowBuilder()
+                    .WithButton("Get all Gists", customId: "getAllGists", style: ButtonStyle.Secondary)
+                    .WithButton(content.Owner.Login, customId: "getAllGistsUser", style: ButtonStyle.Secondary,
+                        disabled: true))
                 .Build());
     }
 
@@ -257,5 +261,61 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
     {
         public string Provider { get; set; }
         public string Url { get; set; }
+    }
+}
+
+public class GithubComponents : InteractionModuleBase<SocketInteractionContext<SocketMessageComponent>>
+{
+    [ComponentInteraction("getAllGists")]
+    public async Task GetAllGists()
+    {
+        // Unholy syntax
+        var test = Context.Interaction.Message.Components
+            .FirstOrDefault(x => x.Components.Any(component => component.CustomId == "getAllGistsUser"))
+            ?.Components.FirstOrDefault(x => x.CustomId == "getAllGistsUser");
+        if (test is null)
+        {
+            await Context.ErrorResponse("Failed to get user", InteractionOrigin.SlashCommandDeferred);
+            return;
+        }
+
+        var user = (test as ButtonComponent)?.Label;
+
+        var response = await $"{Github.BaseUrl}/users/{user}/gists".Request<Github.Gist[]>(OtherConfig.UserAgent);
+        if (response.IsDefault())
+        {
+            await Context.ErrorResponse("Failed to get gist information or user has no gists",
+                InteractionOrigin.SlashCommandDeferred);
+            return;
+        }
+
+        StringBuilder builder = new();
+
+        builder.AppendLine($"User: {user}\n" +
+                           $"Number of Gists: {response?.Length}\n\n");
+
+        foreach (var gist in response!)
+            builder.AppendLine($"Description: {gist.Description.OrElse("No description")}\n" +
+                               $"ID: {gist.Id}\n" +
+                               $"Comments: {gist.Comments}\n" +
+                               $"URL: {gist.HtmlUrl}\n");
+
+        await Context.Interaction.UpdateAsync(p =>
+        {
+            // Stupid way of doing this
+            p.Components = new ComponentBuilder()
+                .WithButton("Open user Gists", url: $"https://gist.github.com/{user}", style: ButtonStyle.Link)
+                .WithButton("Open user Github", url: response[0].Owner.HtmlUrl, style: ButtonStyle.Link)
+                .WithButton("Open latest Gist", url: response[0].HtmlUrl, style: ButtonStyle.Link)
+                .AddRow(new ActionRowBuilder()
+                    .WithButton("Get all Gists", customId: "getAllGists", style: ButtonStyle.Secondary, disabled: true)
+                    .WithButton(user, customId: "getAllGistsUser", style: ButtonStyle.Secondary, disabled: true))
+                .Build();
+        });
+
+        await Context.Channel.SendFileAsync(
+            stream: new MemoryStream(Encoding.UTF8.GetBytes(builder.ToString())),
+            filename: "gists.txt",
+            messageReference: Context.MessageReference());
     }
 }
