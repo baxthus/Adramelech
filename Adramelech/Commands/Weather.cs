@@ -38,7 +38,7 @@ public class Weather : InteractionModuleBase<SocketInteractionContext<SocketSlas
         // Get weather
         var weather = await OpenWeatherUrl
             .AppendPathSegments("data", "2.5", "weather")
-            .SetQueryParam("lat", coordinates[0].Lat)
+            .SetQueryParam("lat", coordinates![0].Lat)
             .SetQueryParam("lon", coordinates[0].Lon)
             .SetQueryParam("appid", ServicesConfig.Instance.OpenWeatherKey)
             .SetQueryParam("units", "metric")

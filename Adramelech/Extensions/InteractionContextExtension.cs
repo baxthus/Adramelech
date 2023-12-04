@@ -36,12 +36,22 @@ public static class InteractionContextExtension
                 await context.Interaction.RespondAsync(embed: embed, ephemeral: true);
                 break;
             case InteractionOrigin.SlashCommandDeferred:
-                // ATTENTION: This is outrageous, kill that with fire
-                // Send a dummy message first so the second message can be ephemeral
-                // Because if I defer without making ephemeral, the followup message will be public
-                // This has the drawback of the replying indicator showing the original message as deleted
-                // Someday I'll find a better way to do this
-                // NOTE: Every command that uses a external API should be deferred
+                // TODO: Find a better way to send error message when deferred
+                // === Description of the problem ===
+                // If the initial defer (done by the command) is not ephemeral, the follow up message can't be ephemeral.
+                // This cause a problem because the error message have to be ephemeral.
+                // === Currently solution ===
+                // 1. Follow up with a dummy message that is not ephemeral.
+                // 2. Delete the dummy message.
+                // 3. Follow up with a ephemeral error message responding to the dummy message.
+                // That way the error message is ephemeral.
+                // === Problems with the current solution ===
+                // 1. The dummy message appear for a short time.
+                //  - People with message loggers will see the dummy message.
+                // 2. The follow up ephemeral error message reply to the deleted dummy message.
+                //  - This cause the reply indicator to show the replayed message as deleted, which makes the UI ugly.
+                // === END ===
+                // NOTE: Every command that uses a external API should be deferred.
                 await context.Interaction.FollowupAsync("opps...")
                     .ContinueWith(async x => await x.Result.DeleteAsync());
                 await context.Interaction.FollowupAsync(embed: embed, ephemeral: true);

@@ -2,3 +2,4 @@
 obj
 bin
 *.DotSettings*
+global.json

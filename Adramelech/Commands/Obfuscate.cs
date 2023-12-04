@@ -4,7 +4,6 @@ using Adramelech.Utilities;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
 namespace Adramelech.Commands;
@@ -31,7 +30,8 @@ public class Obfuscate : InteractionModuleBase<SocketInteractionContext<SocketSl
                 Generator = "sketchy",
                 Metadata = metadata ? "IGNORE" : "PROXY"
             },
-            OtherConfig.UserAgent);
+            userAgent: OtherConfig.UserAgent,
+            dataNamingStrategy: new CamelCaseNamingStrategy());
         if (response.IsDefault())
         {
             await Context.ErrorResponse("Error obfuscating URL", true);
@@ -53,12 +53,11 @@ public class Obfuscate : InteractionModuleBase<SocketInteractionContext<SocketSl
             .Build());
     }
 
-    [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
     private struct ObfuscateData
     {
-        public string Link;
-        public string Generator;
-        public string Metadata;
+        public string Link { get; set; }
+        public string Generator { get; set; }
+        public string Metadata { get; set; }
     }
 
     private struct ObfuscateResponse
