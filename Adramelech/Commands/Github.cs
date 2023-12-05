@@ -275,7 +275,7 @@ public class GithubComponents : InteractionModuleBase<SocketInteractionContext<S
             ?.Components.FirstOrDefault(x => x.CustomId == "getAllGistsUser");
         if (test is null)
         {
-            await Context.ErrorResponse("Failed to get user", InteractionOrigin.SlashCommandDeferred);
+            await Context.ErrorResponse("Failed to get user");
             return;
         }
 
@@ -284,8 +284,7 @@ public class GithubComponents : InteractionModuleBase<SocketInteractionContext<S
         var response = await $"{Github.BaseUrl}/users/{user}/gists".Request<Github.Gist[]>(OtherConfig.UserAgent);
         if (response.IsDefault())
         {
-            await Context.ErrorResponse("Failed to get gist information or user has no gists",
-                InteractionOrigin.SlashCommandDeferred);
+            await Context.ErrorResponse("Failed to get gist information or user has no gists");
             return;
         }
 

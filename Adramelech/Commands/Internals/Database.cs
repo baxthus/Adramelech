@@ -131,13 +131,13 @@ public class DatabaseComponents : InteractionModuleBase<SocketInteractionContext
         }
         catch
         {
-            await Context.ErrorResponse("Failed to remove song from database.", InteractionOrigin.Component);
+            await Context.ErrorResponse("Failed to remove song from database.");
             return;
         }
 
         if (!deleted)
         {
-            await Context.ErrorResponse("Song not found in database.", InteractionOrigin.Component);
+            await Context.ErrorResponse("Song not found in database.");
             return;
         }
 
