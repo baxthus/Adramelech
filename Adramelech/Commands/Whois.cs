@@ -18,7 +18,7 @@ public class Whois : InteractionModuleBase<SocketInteractionContext<SocketSlashC
         var response = await $"https://da.gd/w/{target}".Request<string>();
         if (response.IsNullOrEmpty() || BadStrings.Any(response!.Trim().Contains))
         {
-            await Context.ErrorResponse("Error getting information about the target", true);
+            await Context.SendError("Error getting information about the target", true);
             return;
         }
 

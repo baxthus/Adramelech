@@ -44,7 +44,7 @@ public class Database : InteractionModuleBase<SocketInteractionContext<SocketSla
             }
             catch
             {
-                await Context.ErrorResponse("Failed to add song to database.", true);
+                await Context.SendError("Failed to add song to database.", true);
                 return;
             }
 
@@ -83,13 +83,13 @@ public class Database : InteractionModuleBase<SocketInteractionContext<SocketSla
             }
             catch
             {
-                await Context.ErrorResponse("Failed to get songs from database.", true);
+                await Context.SendError("Failed to get songs from database.", true);
                 return;
             }
 
             if (!songs.Any())
             {
-                await Context.ErrorResponse("No songs found in database.", true);
+                await Context.SendError("No songs found in database.", true);
                 return;
             }
 
@@ -131,13 +131,13 @@ public class DatabaseComponents : InteractionModuleBase<SocketInteractionContext
         }
         catch
         {
-            await Context.ErrorResponse("Failed to remove song from database.");
+            await Context.SendError("Failed to remove song from database.");
             return;
         }
 
         if (!deleted)
         {
-            await Context.ErrorResponse("Song not found in database.");
+            await Context.SendError("Song not found in database.");
             return;
         }
 

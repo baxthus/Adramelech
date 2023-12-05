@@ -23,13 +23,13 @@ public class Covid : InteractionModuleBase<SocketInteractionContext<SocketSlashC
             : await $"{BaseUrl}/countries/{country}".Request<CovidResponse>();
         if (response.IsDefault())
         {
-            await Context.ErrorResponse("Error getting covid stats", true);
+            await Context.SendError("Error getting covid stats", true);
             return;
         }
 
         if (response.Message is not null)
         {
-            await Context.ErrorResponse($"`{response.Message}`", true);
+            await Context.SendError($"`{response.Message}`", true);
             return;
         }
 

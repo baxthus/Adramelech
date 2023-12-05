@@ -33,14 +33,14 @@ public class Anime : InteractionModuleBase<SocketInteractionContext<SocketSlashC
                 case "NSFW":
                     if (Context.Channel is ITextChannel { IsNsfw: false })
                     {
-                        await Context.ErrorResponse("This channel is not NSFW", true);
+                        await Context.SendError("This channel is not NSFW", true);
                         return;
                     }
 
                     rating = new[] { "borderline", "explicit" };
                     break;
                 default:
-                    await Context.ErrorResponse("Invalid age rating");
+                    await Context.SendError("Invalid age rating");
                     return;
             }
 
@@ -53,7 +53,7 @@ public class Anime : InteractionModuleBase<SocketInteractionContext<SocketSlashC
             var response = await url.Request<NekosApiResponse>(OtherConfig.UserAgent);
             if (response.IsDefault())
             {
-                await Context.ErrorResponse("Failed to get image", true);
+                await Context.SendError("Failed to get image", true);
                 return;
             }
 
@@ -81,7 +81,7 @@ public class Anime : InteractionModuleBase<SocketInteractionContext<SocketSlashC
             var response = await "https://nekos.life/api/v2/img/neko".Request<NekosLifeResponse>();
             if (response.IsDefault())
             {
-                await Context.ErrorResponse("Error while fetching neko image", true);
+                await Context.SendError("Error while fetching neko image", true);
                 return;
             }
 

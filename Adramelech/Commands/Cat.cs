@@ -17,7 +17,7 @@ public class Cat : InteractionModuleBase<SocketInteractionContext<SocketSlashCom
         var response = await "https://api.thecatapi.com/v1/images/search".Request<CatResponse[]>();
         if (response.IsDefault())
         {
-            await Context.ErrorResponse("Failed to get cat image", true);
+            await Context.SendError("Failed to get cat image", true);
             return;
         }
 

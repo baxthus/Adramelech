@@ -31,7 +31,7 @@ public class Weather : InteractionModuleBase<SocketInteractionContext<SocketSlas
             .Request<OpenWeatherGeo[]>();
         if (coordinates.IsDefault())
         {
-            await Context.ErrorResponse("Error getting coordinates", true);
+            await Context.SendError("Error getting coordinates", true);
             return;
         }
 
@@ -47,7 +47,7 @@ public class Weather : InteractionModuleBase<SocketInteractionContext<SocketSlas
             .Request<OpenWeather>();
         if (weather.IsDefault())
         {
-            await Context.ErrorResponse("Error getting weather", true);
+            await Context.SendError("Error getting weather", true);
             return;
         }
 

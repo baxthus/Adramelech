@@ -19,7 +19,7 @@ public class Obfuscate : InteractionModuleBase<SocketInteractionContext<SocketSl
 
         if (!url.StartsWith("http"))
         {
-            await Context.ErrorResponse("Invalid URL", true);
+            await Context.SendError("Invalid URL", true);
             return;
         }
 
@@ -34,7 +34,7 @@ public class Obfuscate : InteractionModuleBase<SocketInteractionContext<SocketSl
             dataNamingStrategy: new CamelCaseNamingStrategy());
         if (response.IsDefault())
         {
-            await Context.ErrorResponse("Error obfuscating URL", true);
+            await Context.SendError("Error obfuscating URL", true);
             return;
         }
 

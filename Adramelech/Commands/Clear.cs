@@ -19,7 +19,7 @@ public class Clear : InteractionModuleBase<SocketInteractionContext<SocketSlashC
         var messages = await Context.Channel.GetMessagesAsync(amount).FlattenAsync();
         if (!messages.Any())
         {
-            await Context.ErrorResponse("No messages to delete");
+            await Context.SendError("No messages to delete");
             return;
         }
 
@@ -29,7 +29,7 @@ public class Clear : InteractionModuleBase<SocketInteractionContext<SocketSlashC
         }
         catch
         {
-            await Context.ErrorResponse("Messages are older than 14 days");
+            await Context.SendError("Messages are older than 14 days");
             return;
         }
 

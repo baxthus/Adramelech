@@ -14,7 +14,7 @@ public static class JsonUtils
     /// <param name="obj">The <see cref="object"/> to serialize (can be implicit)</param>
     /// <param name="namingStrategy">The <see cref="NamingStrategy"/> to use for naming (optional)</param>
     /// <returns>The serialized <see cref="string"/> of the <see cref="object"/></returns>
-    /// <seealso cref="FromJson{T}"/>
+    /// <seealso cref="FromJson{T}(string, NamingStrategy?)"/>
     public static string ToJson(this object obj, NamingStrategy? namingStrategy = null) => JsonConvert.SerializeObject(
         obj, namingStrategy switch
         {
@@ -34,7 +34,7 @@ public static class JsonUtils
     /// </summary>
     /// <param name="json">The JSON <see cref="string"/> to deserialize (can be implicit)</param>
     /// <param name="namingStrategy">The <see cref="NamingStrategy"/> to use for naming (optional)</param>
-    /// <typeparam name="T">The type of the <see cref="object"/> to deserialize to (can be implicit)</typeparam>
+    /// <typeparam name="T">The type of the <see cref="object"/> to deserialize to</typeparam>
     /// <returns>The deserialized <see cref="object"/> of the JSON <see cref="string"/></returns>
     /// <seealso cref="ToJson"/>
     public static T? FromJson<T>(this string json, NamingStrategy? namingStrategy = null) =>

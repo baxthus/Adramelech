@@ -20,7 +20,7 @@ public class SendDm : InteractionModuleBase<SocketInteractionContext<SocketSlash
         }
         catch (Exception)
         {
-            await Context.ErrorResponse("Error sending DM");
+            await Context.SendError("Error sending DM");
             return;
         }
 

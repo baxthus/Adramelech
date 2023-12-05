@@ -21,14 +21,14 @@ public class Lookup : InteractionModuleBase<SocketInteractionContext<SocketSlash
             : await GetIpFromDomain(local);
         if (ip.IsNullOrEmpty())
         {
-            await Context.ErrorResponse("Failed to lookup ip", true);
+            await Context.SendError("Failed to lookup ip", true);
             return;
         }
 
         var response = await $"https://ipwho.is/{ip}".Request<Whois>("curl");
         if (response.IsDefault() || !response.Success)
         {
-            await Context.ErrorResponse("Error while looking up ip", true);
+            await Context.SendError("Error while looking up ip", true);
             return;
         }
 

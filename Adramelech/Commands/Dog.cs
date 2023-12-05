@@ -17,7 +17,7 @@ public class Dog : InteractionModuleBase<SocketInteractionContext<SocketSlashCom
         var response = await "https://dog.ceo/api/breeds/image/random".Request<DogResponse>();
         if (response.IsDefault() || response.Status != "success")
         {
-            await Context.ErrorResponse("Failed to get dog image", true);
+            await Context.SendError("Failed to get dog image", true);
             return;
         }
 

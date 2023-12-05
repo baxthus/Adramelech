@@ -16,7 +16,7 @@ public static class InteractionContextExtension
     /// <param name="context">The interaction context (can be implicit)</param>
     /// <param name="description">The description of the error (optional)</param>
     /// <param name="origin">The origin of the interaction; default is <see cref="InteractionOrigin.SlashCommand"/></param>
-    private static async Task ErrorResponse(this IInteractionContext context, string? description = null,
+    private static async Task SendError(this IInteractionContext context, string? description = null,
         InteractionOrigin origin = InteractionOrigin.SlashCommand)
     {
         var embed = description is null
@@ -82,10 +82,10 @@ public static class InteractionContextExtension
     /// <param name="context">The interaction context (can be implicit)</param>
     /// <param name="description">The description of the error (optional)</param>
     /// <param name="isDeferred">True if the interaction is deferred; default is false</param>
-    /// <remarks>This is a overload for <see cref="ErrorResponse(IInteractionContext,string?,InteractionOrigin)"/></remarks>
-    public static async Task ErrorResponse(this SocketInteractionContext<SocketSlashCommand> context,
+    /// <remarks>This is a overload for <see cref="SendError(IInteractionContext,string?,InteractionOrigin)"/></remarks>
+    public static async Task SendError(this SocketInteractionContext<SocketSlashCommand> context,
         string? description = null, bool isDeferred = false) =>
-        await ErrorResponse(context, description,
+        await SendError(context, description,
             isDeferred ? InteractionOrigin.SlashCommandDeferred : InteractionOrigin.SlashCommand);
 
     /// <summary>
@@ -93,9 +93,9 @@ public static class InteractionContextExtension
     /// </summary>
     /// <param name="context">The interaction context (can be implicit)</param>
     /// <param name="description">The description of the error (optional)</param>
-    /// <remarks>This is a overload for <see cref="ErrorResponse(IInteractionContext,string?,InteractionOrigin)"/></remarks>
-    public static async Task ErrorResponse(this SocketInteractionContext<SocketMessageComponent> context,
-        string? description = null) => await ErrorResponse(context, description, InteractionOrigin.Component);
+    /// <remarks>This is a overload for <see cref="SendError(IInteractionContext,string?,InteractionOrigin)"/></remarks>
+    public static async Task SendError(this SocketInteractionContext<SocketMessageComponent> context,
+        string? description = null) => await SendError(context, description, InteractionOrigin.Component);
 
     /// <summary>
     /// Get the <see cref="MessageReference"/> from a <see cref="IInteractionContext"/>

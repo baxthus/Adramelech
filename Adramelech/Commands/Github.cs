@@ -24,7 +24,7 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
         var response = await $"{BaseUrl}/repos/{user}/{repository}".Request<Repository>(OtherConfig.UserAgent);
         if (response.IsDefault())
         {
-            await Context.ErrorResponse("Failed to get repository information", true);
+            await Context.SendError("Failed to get repository information", true);
             return;
         }
 
@@ -71,7 +71,7 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
         var response = await $"{BaseUrl}/users/{user}".Request<User>(OtherConfig.UserAgent);
         if (response.IsDefault())
         {
-            await Context.ErrorResponse("Failed to get user information", true);
+            await Context.SendError("Failed to get user information", true);
             return;
         }
 
@@ -116,7 +116,7 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
         var response = await $"{BaseUrl}/users/{user}/gists".Request<Gist[]>(OtherConfig.UserAgent);
         if (response.IsDefault())
         {
-            await Context.ErrorResponse("Failed to get gist information or user has no gists", true);
+            await Context.SendError("Failed to get gist information or user has no gists", true);
             return;
         }
 
@@ -275,7 +275,7 @@ public class GithubComponents : InteractionModuleBase<SocketInteractionContext<S
             ?.Components.FirstOrDefault(x => x.CustomId == "getAllGistsUser");
         if (test is null)
         {
-            await Context.ErrorResponse("Failed to get user");
+            await Context.SendError("Failed to get user");
             return;
         }
 
@@ -284,7 +284,7 @@ public class GithubComponents : InteractionModuleBase<SocketInteractionContext<S
         var response = await $"{Github.BaseUrl}/users/{user}/gists".Request<Github.Gist[]>(OtherConfig.UserAgent);
         if (response.IsDefault())
         {
-            await Context.ErrorResponse("Failed to get gist information or user has no gists");
+            await Context.SendError("Failed to get gist information or user has no gists");
             return;
         }
 

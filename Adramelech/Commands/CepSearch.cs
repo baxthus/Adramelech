@@ -18,7 +18,7 @@ public class CepSearch : InteractionModuleBase<SocketInteractionContext<SocketSl
         var response = await $"https://brasilapi.com.br/api/cep/v2/{cep}".Request<CepResponse>();
         if (response.IsDefault())
         {
-            await Context.ErrorResponse("Something went wrong while searching for the CEP", true);
+            await Context.SendError("Something went wrong while searching for the CEP", true);
             return;
         }
 
@@ -29,7 +29,7 @@ public class CepSearch : InteractionModuleBase<SocketInteractionContext<SocketSl
                          $"**Message:** `{response.Message}`\n" +
                          $"**Type:** `{response.Type}`";
 
-            await Context.ErrorResponse(errors, true);
+            await Context.SendError(errors, true);
             return;
         }
 

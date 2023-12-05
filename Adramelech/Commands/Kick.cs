@@ -20,13 +20,13 @@ public class Kick : InteractionModuleBase<SocketInteractionContext<SocketSlashCo
     {
         if (member.Id == Context.User.Id)
         {
-            await Context.ErrorResponse("You cannot kick yourself");
+            await Context.SendError("You cannot kick yourself");
             return;
         }
 
         if (member.Hierarchy >= Context.Guild.CurrentUser.Hierarchy)
         {
-            await Context.ErrorResponse("You cannot kick a member with a higher or equal role");
+            await Context.SendError("You cannot kick a member with a higher or equal role");
             return;
         }
 

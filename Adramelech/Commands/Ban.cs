@@ -20,13 +20,13 @@ public class Ban : InteractionModuleBase<SocketInteractionContext<SocketSlashCom
     {
         if (member.Id == Context.User.Id)
         {
-            await Context.ErrorResponse("You cannot ban yourself");
+            await Context.SendError("You cannot ban yourself");
             return;
         }
 
         if (member.Hierarchy >= Context.Guild.CurrentUser.Hierarchy)
         {
-            await Context.ErrorResponse("You cannot ban a member with a higher or equal role");
+            await Context.SendError("You cannot ban a member with a higher or equal role");
             return;
         }
 
