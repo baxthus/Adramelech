@@ -1,6 +1,5 @@
 ﻿using Adramelech.Database;
 using MongoDB.Driver;
-using Serilog;
 
 namespace Adramelech.Configuration;
 
@@ -20,19 +19,13 @@ public class ServicesConfig
             .FirstOrDefault()
             .Value;
         if (string.IsNullOrEmpty(openWeatherKey))
-        {
-            Log.Fatal("OpenWeatherKey not found in database.");
-            Environment.Exit(1);
-        }
+            throw new Exception("OpenWeatherKey not found in database.");
 
         var feedbackWebhook = DatabaseManager.Config.Find(x => x.Key == "FeedbackWebhook")
             .FirstOrDefault()
             .Value;
         if (string.IsNullOrEmpty(feedbackWebhook))
-        {
-            Log.Fatal("FeedbackWebhook not found in database.");
-            Environment.Exit(1);
-        }
+            throw new Exception("FeedbackWebhook not found in database.");
 
         OpenWeatherKey = openWeatherKey;
         FeedbackWebhook = feedbackWebhook;
