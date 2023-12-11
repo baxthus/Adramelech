@@ -30,6 +30,9 @@ public static class HttpUtils
         if (!response.IsSuccessStatusCode)
             return default;
 
+        if (typeof(T) == typeof(byte[]))
+            return (T)(object)await response.Content.ReadAsByteArrayAsync();
+
         var content = await response.Content.ReadAsStringAsync();
 
         // If T is string, don't deserialize

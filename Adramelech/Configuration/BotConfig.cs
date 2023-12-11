@@ -1,7 +1,6 @@
 ﻿using Adramelech.Database;
 using Discord;
 using MongoDB.Driver;
-using Serilog;
 
 namespace Adramelech.Configuration;
 
@@ -22,10 +21,7 @@ public class BotConfig
             .FirstOrDefault()
             .Value;
         if (string.IsNullOrEmpty(botToken))
-        {
-            Log.Fatal("Token not found in database.");
-            Environment.Exit(1);
-        }
+            throw new Exception("Bot token not found in database");
 
         Token = botToken;
     }

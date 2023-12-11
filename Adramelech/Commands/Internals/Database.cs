@@ -14,6 +14,117 @@ namespace Adramelech.Commands.Internals;
 [RequireOwner]
 public class Database : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
+    [Group("config", "Configuration database commands")]
+    public class Config : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
+    {
+        [SlashCommand("regen-api-token", "Regenerate the API token")]
+        public async Task RegenApiTokenAsync()
+        {
+            await DeferAsync(true);
+
+            // Yeah, I know this is not really random, but it's good enough for me
+            var apiToken = Guid.NewGuid().ToString("N");
+
+            var filter = Builders<ConfigSchema>.Filter.Eq(x => x.Key, "ApiToken");
+
+            try
+            {
+                var exist = await DatabaseManager.Config.Find(filter).AnyAsync();
+
+                if (exist)
+                    await DatabaseManager.Config.UpdateOneAsync(filter,
+                        Builders<ConfigSchema>.Update.Set(x => x.Value, apiToken));
+                else
+                    await DatabaseManager.Config.InsertOneAsync(new ConfigSchema
+                    {
+                        Id = ObjectId.GenerateNewId(),
+                        Key = "ApiToken",
+                        Value = apiToken
+                    });
+            }
+            catch
+            {
+                await Context.SendError("Failed to regenerate API token.", true);
+                return;
+            }
+
+            HttpConfig.Refresh();
+
+            await FollowupAsync(
+                embed: new EmbedBuilder()
+                    .WithColor(BotConfig.EmbedColor)
+                    .WithTitle("API token regenerated")
+                    .WithDescription($"**New API token:** `{apiToken}`")
+                    .Build(),
+                ephemeral: true);
+        }
+
+        [SlashCommand("files-channel", "Get or set the files channel")]
+        public async Task FilesChannelAsync(
+            [Summary("channel", "The channel to set as files channel")]
+            SocketTextChannel? channel = null)
+        {
+            await DeferAsync(true);
+
+            if (channel is null)
+            {
+                var channelId = HttpConfig.Instance.FilesChannel;
+                if (!channelId.HasValue)
+                {
+                    await Context.SendError("Files channel not set.", true);
+                    return;
+                }
+
+                var filesChannel = Context.Guild.GetChannel(channelId.Value);
+
+                await FollowupAsync(
+                    embed: new EmbedBuilder()
+                        .WithColor(BotConfig.EmbedColor)
+                        .WithTitle("Files channel")
+                        .WithDescription($"**ID:** `{filesChannel.Id}`\n" +
+                                         $"**Name:** {filesChannel.Name}\n" +
+                                         $"**Guild:** {filesChannel.Guild.Name} (`{filesChannel.Guild.Id}`)")
+                        .Build(),
+                    ephemeral: true);
+                return;
+            }
+
+            var filter = Builders<ConfigSchema>.Filter.Eq(x => x.Key, "FilesChannelId");
+
+            try
+            {
+                var exist = await DatabaseManager.Config.Find(filter).AnyAsync();
+
+                if (exist)
+                    await DatabaseManager.Config.UpdateOneAsync(filter,
+                        Builders<ConfigSchema>.Update.Set(x => x.Value, channel.Id.ToString()));
+                else
+                    await DatabaseManager.Config.InsertOneAsync(new ConfigSchema
+                    {
+                        Id = ObjectId.GenerateNewId(),
+                        Key = "FilesChannelId",
+                        Value = channel.Id.ToString()
+                    });
+            }
+            catch
+            {
+                await Context.SendError("Failed to set files channel.", true);
+                return;
+            }
+
+            HttpConfig.Refresh();
+
+            await FollowupAsync(
+                embed: new EmbedBuilder()
+                    .WithColor(BotConfig.EmbedColor)
+                    .WithTitle("Files channel set")
+                    .WithDescription($"**ID:** `{channel.Id}`\n" +
+                                     $"**Name:** {channel.Name}")
+                    .Build(),
+                ephemeral: true);
+        }
+    }
+
     [Group("music", "Music database commands")]
     public class Music : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
     {

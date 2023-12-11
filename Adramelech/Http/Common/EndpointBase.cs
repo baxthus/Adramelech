@@ -1,0 +1,95 @@
+﻿using System.Net;
+using Adramelech.Configuration;
+using Adramelech.Http.Attributes;
+using Adramelech.Http.Extensions;
+using Discord.WebSocket;
+using Serilog;
+
+namespace Adramelech.Http.Common;
+
+public abstract class EndpointBase
+{
+    protected HttpListenerContext Context = null!;
+    protected HttpListenerRequest Request = null!;
+    protected DiscordSocketClient BotClient = null!;
+
+    public readonly string? Path;
+    private readonly string? _method;
+    private bool _needsToken;
+
+    protected EndpointBase()
+    {
+        if (GetAttribute<EndpointAttribute>(this) is not { } endpointAttribute)
+            throw new InvalidOperationException("Endpoint attribute not found");
+
+        Path = endpointAttribute.Path;
+        _method = endpointAttribute.Method;
+    }
+
+    public async Task HandleRequestAsync(HttpListenerContext context, HttpListenerRequest request,
+        DiscordSocketClient botClient)
+    {
+        Context = context;
+        Request = request;
+        BotClient = botClient;
+
+        if (GetAttribute<NeedsTokenAttribute>(this) is not null)
+            _needsToken = true;
+
+        if (!await ExecuteCheckAsync()) return;
+
+        try
+        {
+            await HandleAsync();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Failed to handle request");
+            await context.RespondAsync("Internal server error", HttpStatusCode.InternalServerError);
+        }
+    }
+
+    protected abstract Task HandleAsync();
+
+    internal byte[]? GetBody()
+    {
+        using BinaryReader r = new(Request.InputStream);
+        var buffer = r.ReadBytes(Convert.ToInt32(Request.ContentLength64));
+
+        return buffer.Length > 0 ? buffer : null;
+    }
+
+    private static T? GetAttribute<T>(object obj) where T : Attribute =>
+        obj.GetType().GetCustomAttributes(typeof(T), false).FirstOrDefault() as T;
+
+    private async Task<bool> ExecuteCheckAsync()
+    {
+        if (_method == Request.HttpMethod) return _needsToken is not true || await VerifyToken();
+
+        await Context.RespondAsync("Method Not Allowed", HttpStatusCode.MethodNotAllowed);
+        return false;
+    }
+
+    private async Task<bool> VerifyToken()
+    {
+        var token = Request.QueryString["token"];
+        if (string.IsNullOrEmpty(token))
+        {
+            await Context.RespondAsync("Missing token parameter", HttpStatusCode.BadRequest);
+            return false;
+        }
+
+        var validToken = HttpConfig.Instance.ApiToken;
+        if (string.IsNullOrEmpty(validToken))
+        {
+            await Context.RespondAsync("No token configured", HttpStatusCode.InternalServerError);
+            return false;
+        }
+
+        // Peak of security as always
+        if (token == HttpConfig.Instance.ApiToken) return true;
+
+        await Context.RespondAsync("Invalid token", HttpStatusCode.Forbidden);
+        return false;
+    }
+}
