@@ -15,12 +15,11 @@ public abstract class EndpointBase
 
     public readonly string? Path;
     private readonly string? _method;
-    private bool? _needsToken;
+    private bool _needsToken;
 
     protected EndpointBase()
     {
         if (GetAttribute<EndpointAttribute>(this) is not { } endpointAttribute)
-            // This should never happen, as if the attribute is missing, the endpoint won't be registered
             throw new InvalidOperationException("Endpoint attribute not found");
 
         Path = endpointAttribute.Path;
@@ -34,8 +33,8 @@ public abstract class EndpointBase
         Request = request;
         BotClient = botClient;
 
-        if (GetAttribute<NeedsTokenAttribute>(this) is { } needsTokenAttribute)
-            _needsToken = needsTokenAttribute.NeedsToken;
+        if (GetAttribute<NeedsTokenAttribute>(this) is not null)
+            _needsToken = true;
 
         if (!await ExecuteCheckAsync()) return;
 
