@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using Adramelech.Http.Attributes;
 using Adramelech.Http.Common;
+using Adramelech.Http.Extensions;
 using Adramelech.Http.Utilities;
 using Adramelech.Utilities;
 
@@ -15,14 +16,14 @@ public class DownloadEndpoint : EndpointBase
         var ids = Request.QueryString["ids"]?.Split(',');
         if (ids is null or { Length: 0 })
         {
-            await RespondAsync("Missing ids parameter", HttpStatusCode.BadRequest);
+            await Context.RespondAsync("Missing ids parameter", HttpStatusCode.BadRequest);
             return;
         }
 
         var channel = await FilesEndpointUtils.GetChannel(BotClient);
         if (channel is null)
         {
-            await RespondAsync("Channel not found", HttpStatusCode.InternalServerError);
+            await Context.RespondAsync("Channel not found", HttpStatusCode.InternalServerError);
             return;
         }
 
@@ -32,35 +33,35 @@ public class DownloadEndpoint : EndpointBase
         {
             if (!ulong.TryParse(id, out var messageId))
             {
-                await RespondAsync($"Invalid message id: {id}", HttpStatusCode.BadRequest);
+                await Context.RespondAsync($"Invalid message id: {id}", HttpStatusCode.BadRequest);
                 return;
             }
 
             var message = await channel.GetMessageAsync(messageId);
             if (message is null)
             {
-                await RespondAsync($"Message not found: {id}", HttpStatusCode.NotFound);
+                await Context.RespondAsync($"Message not found: {id}", HttpStatusCode.NotFound);
                 return;
             }
 
             var attachment = message.Attachments.FirstOrDefault();
             if (attachment is null)
             {
-                await RespondAsync($"Message has no attachments: {id}", HttpStatusCode.BadGateway);
+                await Context.RespondAsync($"Message has no attachments: {id}", HttpStatusCode.BadGateway);
                 return;
             }
 
             var response = await attachment.Url.Request<byte[]>();
             if (response is null)
             {
-                await RespondAsync($"Failed to download image: {id}", HttpStatusCode.BadGateway);
+                await Context.RespondAsync($"Failed to download image: {id}", HttpStatusCode.BadGateway);
                 return;
             }
 
             image.Add(response);
         }
 
-        await RespondAsync(CombineBytes(image),
+        await Context.RespondAsync(CombineBytes(image),
             contentType: Request.QueryString["contentType"] ?? "application/octet-stream");
     }
 

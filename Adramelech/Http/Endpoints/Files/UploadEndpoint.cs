@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using Adramelech.Http.Attributes;
 using Adramelech.Http.Common;
+using Adramelech.Http.Extensions;
 using Adramelech.Http.Utilities;
 using Adramelech.Utilities;
 using MongoDB.Bson;
@@ -16,14 +17,14 @@ public class UploadEndpoint : EndpointBase
         var body = GetBody();
         if (body is null)
         {
-            await RespondAsync("Missing body", HttpStatusCode.BadRequest);
+            await Context.RespondAsync("Missing body", HttpStatusCode.BadRequest);
             return;
         }
 
         var channel = await FilesEndpointUtils.GetChannel(BotClient);
         if (channel is null)
         {
-            await RespondAsync("Channel not found", HttpStatusCode.InternalServerError);
+            await Context.RespondAsync("Channel not found", HttpStatusCode.InternalServerError);
             return;
         }
 
@@ -59,7 +60,7 @@ public class UploadEndpoint : EndpointBase
             ids.Add(message.Id);
         }
 
-        await RespondAsync(JsonUtils.ToJson(ids), contentType: "application/json");
+        await Context.RespondAsync(JsonUtils.ToJson(ids), contentType: "application/json");
     }
 }
 

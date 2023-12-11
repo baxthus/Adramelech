@@ -1,7 +1,7 @@
 ﻿using System.Net;
-using System.Text;
 using Adramelech.Configuration;
 using Adramelech.Http.Attributes;
+using Adramelech.Http.Extensions;
 using Discord.WebSocket;
 using Serilog;
 
@@ -9,7 +9,7 @@ namespace Adramelech.Http.Common;
 
 public abstract class EndpointBase
 {
-    private HttpListenerContext _context = null!;
+    protected HttpListenerContext Context = null!;
     protected HttpListenerRequest Request = null!;
     protected DiscordSocketClient BotClient = null!;
 
@@ -29,7 +29,7 @@ public abstract class EndpointBase
     public async Task HandleRequestAsync(HttpListenerContext context, HttpListenerRequest request,
         DiscordSocketClient botClient)
     {
-        _context = context;
+        Context = context;
         Request = request;
         BotClient = botClient;
 
@@ -45,28 +45,11 @@ public abstract class EndpointBase
         catch (Exception e)
         {
             Log.Error(e, "Failed to handle request");
-            await RespondAsync("Internal server error", HttpStatusCode.InternalServerError);
+            await context.RespondAsync("Internal server error", HttpStatusCode.InternalServerError);
         }
     }
 
     protected abstract Task HandleAsync();
-
-    internal async Task RespondAsync(ReadOnlyMemory<byte> buffer, HttpStatusCode statusCode = HttpStatusCode.OK,
-        string contentType = "text/plain")
-    {
-        var response = _context.Response;
-
-        response.StatusCode = statusCode.GetHashCode();
-        response.ContentType = contentType;
-        response.ContentLength64 = buffer.Length;
-        await response.OutputStream.WriteAsync(buffer);
-
-        response.Close();
-    }
-
-    internal Task RespondAsync(string content, HttpStatusCode statusCode = HttpStatusCode.OK,
-        string contentType = "text/plain") =>
-        RespondAsync(Encoding.UTF8.GetBytes(content), statusCode, contentType);
 
     internal byte[]? GetBody()
     {
@@ -83,7 +66,7 @@ public abstract class EndpointBase
     {
         if (_method == Request.HttpMethod) return _needsToken is not true || await VerifyToken();
 
-        await RespondAsync("Method Not Allowed", HttpStatusCode.MethodNotAllowed);
+        await Context.RespondAsync("Method Not Allowed", HttpStatusCode.MethodNotAllowed);
         return false;
     }
 
@@ -92,20 +75,21 @@ public abstract class EndpointBase
         var token = Request.QueryString["token"];
         if (string.IsNullOrEmpty(token))
         {
-            await RespondAsync("Missing token parameter", HttpStatusCode.BadRequest);
+            await Context.RespondAsync("Missing token parameter", HttpStatusCode.BadRequest);
             return false;
         }
 
         var validToken = HttpConfig.Instance.ApiToken;
         if (string.IsNullOrEmpty(validToken))
         {
-            await RespondAsync("No token configured", HttpStatusCode.InternalServerError);
+            await Context.RespondAsync("No token configured", HttpStatusCode.InternalServerError);
             return false;
         }
 
+        // Peak of security as always
         if (token == HttpConfig.Instance.ApiToken) return true;
 
-        await RespondAsync("Invalid token", HttpStatusCode.Unauthorized);
+        await Context.RespondAsync("Invalid token", HttpStatusCode.Forbidden);
         return false;
     }
 }

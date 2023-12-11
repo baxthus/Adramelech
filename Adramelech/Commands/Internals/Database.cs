@@ -31,21 +31,16 @@ public class Database : InteractionModuleBase<SocketInteractionContext<SocketSla
             {
                 var exist = await DatabaseManager.Config.Find(filter).AnyAsync();
 
-                switch (exist)
-                {
-                    case true:
-                        await DatabaseManager.Config.UpdateOneAsync(filter,
-                            Builders<ConfigSchema>.Update.Set(x => x.Value, apiToken));
-                        break;
-                    case false:
-                        await DatabaseManager.Config.InsertOneAsync(new ConfigSchema
-                        {
-                            Id = ObjectId.GenerateNewId(),
-                            Key = "ApiToken",
-                            Value = apiToken
-                        });
-                        break;
-                }
+                if (exist)
+                    await DatabaseManager.Config.UpdateOneAsync(filter,
+                        Builders<ConfigSchema>.Update.Set(x => x.Value, apiToken));
+                else
+                    await DatabaseManager.Config.InsertOneAsync(new ConfigSchema
+                    {
+                        Id = ObjectId.GenerateNewId(),
+                        Key = "ApiToken",
+                        Value = apiToken
+                    });
             }
             catch
             {
@@ -100,21 +95,16 @@ public class Database : InteractionModuleBase<SocketInteractionContext<SocketSla
             {
                 var exist = await DatabaseManager.Config.Find(filter).AnyAsync();
 
-                switch (exist)
-                {
-                    case true:
-                        await DatabaseManager.Config.UpdateOneAsync(filter,
-                            Builders<ConfigSchema>.Update.Set(x => x.Value, channel.Id.ToString()));
-                        break;
-                    case false:
-                        await DatabaseManager.Config.InsertOneAsync(new ConfigSchema
-                        {
-                            Id = ObjectId.GenerateNewId(),
-                            Key = "FilesChannelId",
-                            Value = channel.Id.ToString()
-                        });
-                        break;
-                }
+                if (exist)
+                    await DatabaseManager.Config.UpdateOneAsync(filter,
+                        Builders<ConfigSchema>.Update.Set(x => x.Value, channel.Id.ToString()));
+                else
+                    await DatabaseManager.Config.InsertOneAsync(new ConfigSchema
+                    {
+                        Id = ObjectId.GenerateNewId(),
+                        Key = "FilesChannelId",
+                        Value = channel.Id.ToString()
+                    });
             }
             catch
             {

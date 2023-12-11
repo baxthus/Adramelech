@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using System.Reflection;
-using System.Text;
 using Adramelech.Http.Common;
+using Adramelech.Http.Extensions;
 using Discord.WebSocket;
 using Serilog;
 
@@ -13,12 +13,12 @@ public class HttpServer
     private readonly DiscordSocketClient _botClient;
     private volatile bool _stop = true;
 
-    public HttpServer(DiscordSocketClient botClient, int? port = null)
+    public HttpServer(DiscordSocketClient botClient, int port = 8000)
     {
         _botClient = botClient;
 
         _listener = new HttpListener();
-        _listener.Prefixes.Add($"http://localhost:{port ?? 8000}/");
+        _listener.Prefixes.Add($"http://localhost:{port}/");
     }
 
     public async Task InitializeAsync()
@@ -55,31 +55,25 @@ public class HttpServer
         var endpoint = GetEndpoints().FirstOrDefault(e => e.Path == request.Url?.AbsolutePath);
         if (endpoint is null)
         {
-            await Respond(context, "Invalid endpoint", statusCode: 404);
+            await context.RespondAsync("Invalid endpoint", HttpStatusCode.NotFound);
             return;
         }
 
-        await endpoint.HandleRequestAsync(context, request, _botClient);
+        try
+        {
+            await endpoint.HandleRequestAsync(context, request, _botClient);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Failed to handle request");
+            await context.RespondAsync("Internal server error", HttpStatusCode.InternalServerError);
+        }
     }
 
     private static IEnumerable<EndpointBase> GetEndpoints() =>
         Assembly.GetExecutingAssembly().GetTypes()
             .Where(t => t is { IsClass: true, IsAbstract: false } && t.IsSubclassOf(typeof(EndpointBase)))
             .Select(t => (EndpointBase)Activator.CreateInstance(t)!);
-
-    private static async Task Respond(HttpListenerContext context, string content, string contentType = "text/plain",
-        int statusCode = 200)
-    {
-        var response = context.Response;
-        var buffer = Encoding.UTF8.GetBytes(content);
-
-        response.StatusCode = statusCode;
-        response.ContentType = contentType;
-        response.ContentLength64 = buffer.Length;
-        await response.OutputStream.WriteAsync(buffer);
-
-        response.Close();
-    }
 
     private void Stop() => _listener.Stop();
 }
