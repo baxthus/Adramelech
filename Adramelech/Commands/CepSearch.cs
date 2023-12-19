@@ -58,8 +58,8 @@ public class CepSearch : InteractionModuleBase<SocketInteractionContext<SocketSl
             embed: new EmbedBuilder()
                 .WithColor(BotConfig.EmbedColor)
                 .WithTitle("__Adramelech CEP Search__")
-                .AddField(":zap: **Main**", mainField, true)
-                .AddField(":earth_americas: **Location**", locationField, true)
+                .AddField(":zap: __**Main**__", mainField, true)
+                .AddField(":earth_americas: __**Location**__", locationField, true)
                 .WithFooter("Powered by brasilapi.com.br")
                 .Build(),
             components: new ComponentBuilder()

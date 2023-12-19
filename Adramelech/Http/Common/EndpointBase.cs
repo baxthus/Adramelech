@@ -2,6 +2,7 @@
 using Adramelech.Configuration;
 using Adramelech.Http.Attributes;
 using Adramelech.Http.Extensions;
+using Adramelech.Utilities;
 using Discord.WebSocket;
 using Serilog;
 
@@ -19,11 +20,11 @@ public abstract class EndpointBase
 
     protected EndpointBase()
     {
-        if (GetAttribute<EndpointAttribute>(this) is not { } endpointAttribute)
+        if (GetAttribute<EndpointAttribute>(this) is not { } endpoint)
             throw new InvalidOperationException("Endpoint attribute not found");
 
-        Path = endpointAttribute.Path;
-        _method = endpointAttribute.Method;
+        Path = endpoint.Path;
+        _method = endpoint.Method;
     }
 
     public async Task HandleRequestAsync(HttpListenerContext context, HttpListenerRequest request,
@@ -86,8 +87,14 @@ public abstract class EndpointBase
             return false;
         }
 
-        // Peak of security as always
-        if (token == HttpConfig.Instance.ApiToken) return true;
+        var validTokenSalt = HttpConfig.Instance.ApiTokenSalt;
+        if (string.IsNullOrEmpty(validTokenSalt))
+        {
+            await Context.RespondAsync("No token salt configured", HttpStatusCode.InternalServerError);
+            return false;
+        }
+
+        if (EncryptUtils.CompareHash(token, validToken, validTokenSalt)) return true;
 
         await Context.RespondAsync("Invalid token", HttpStatusCode.Forbidden);
         return false;

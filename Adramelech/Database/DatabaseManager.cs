@@ -1,4 +1,5 @@
-﻿using MongoDB.Bson.Serialization.Conventions;
+﻿using Adramelech.Http.Schemas;
+using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using Serilog;
 
@@ -7,10 +8,11 @@ namespace Adramelech.Database;
 public static class DatabaseManager
 {
     private static MongoClient? Client { get; set; }
-    private static IMongoDatabase? ConfigDb { get; set; }
+    private static IMongoDatabase? AdramelechDb { get; set; }
     private static IMongoDatabase? GeneralDb { get; set; }
     public static IMongoCollection<ConfigSchema> Config { get; private set; } = null!;
     public static IMongoCollection<MusicSchema> Music { get; private set; } = null!;
+    public static IMongoCollection<FileSchema> Files { get; private set; } = null!;
 
     public static void Connect()
     {
@@ -37,10 +39,11 @@ public static class DatabaseManager
         try
         {
             Client = new MongoClient(settings);
-            ConfigDb = Client.GetDatabase("adramelech");
+            AdramelechDb = Client.GetDatabase("adramelech");
             GeneralDb = Client.GetDatabase("general");
-            Config = ConfigDb.GetCollection<ConfigSchema>("config");
+            Config = AdramelechDb.GetCollection<ConfigSchema>("config");
             Music = GeneralDb.GetCollection<MusicSchema>("music");
+            Files = AdramelechDb.GetCollection<FileSchema>("files");
         }
         catch (Exception e)
         {
@@ -48,7 +51,7 @@ public static class DatabaseManager
             Environment.Exit(1);
         }
 
-        Log.Debug("Opened database connection, Database: {Database}", ConfigDb.DatabaseNamespace.DatabaseName);
+        Log.Debug("Opened database connection, Database: {Database}", AdramelechDb.DatabaseNamespace.DatabaseName);
         Log.Debug("Opened database connection, Database: {Database}", GeneralDb.DatabaseNamespace.DatabaseName);
     }
 }

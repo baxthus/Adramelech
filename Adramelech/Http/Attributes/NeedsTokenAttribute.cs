@@ -1,4 +1,4 @@
 ﻿namespace Adramelech.Http.Attributes;
 
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
+[AttributeUsage(AttributeTargets.Class)]
 public class NeedsTokenAttribute() : Attribute;

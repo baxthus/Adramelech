@@ -31,7 +31,7 @@ public class Anime : InteractionModuleBase<SocketInteractionContext<SocketSlashC
                     rating = new[] { "safe", "questionable" };
                     break;
                 case "NSFW":
-                    if (Context.Channel is ITextChannel { IsNsfw: false })
+                    if (Context.Channel is not SocketTextChannel { IsNsfw: true })
                     {
                         await Context.SendError("This channel is not NSFW", true);
                         return;

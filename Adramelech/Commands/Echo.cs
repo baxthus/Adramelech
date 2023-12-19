@@ -9,14 +9,28 @@ public class Echo : InteractionModuleBase<SocketInteractionContext<SocketSlashCo
 {
     [SlashCommand("echo", "Echoes the given text")]
     [RequireUserPermission(GuildPermission.ManageMessages)]
-    public async Task EchoAsync([Summary("text", "The text to echo")] string text)
-    {
-        // The "\\-" is to the character "-" not be interpreted as a markdown list
-        // Is necessary two "\\", because the first is to escape the second, and the second is to escape the "-"
-        // I love string interpolation
-        var final = $"{text}\n\n \\- {Context.User.Mention}";
+    public async Task EchoAsync() => await RespondWithModalAsync<EchoModal>("echo_modal");
 
-        await Context.Channel.SendMessageAsync(final);
+    public class EchoModal : IModal
+    {
+        public string Title => "Echo";
+
+        [InputLabel("Message")]
+        [ModalTextInput("message", TextInputStyle.Paragraph, "Please enter your message here")]
+        public required string Message { get; set; }
+    }
+}
+
+public class EchoModalResponse : InteractionModuleBase<SocketInteractionContext<SocketModal>>
+{
+    [ModalInteraction("echo_modal")]
+    public async Task ModalAsync(Echo.EchoModal modal)
+    {
+        var message = modal.Message;
+
+        var final = $"{message}\n\n \\- {Context.User.Mention}";
+
+        await ReplyAsync(final);
 
         await RespondAsync(
             embed: new EmbedBuilder()

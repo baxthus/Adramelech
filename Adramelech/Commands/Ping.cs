@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using Adramelech.Configuration;
+﻿using Adramelech.Configuration;
 using Adramelech.Extensions;
 using Discord;
 using Discord.Interactions;
@@ -27,15 +26,6 @@ public class Velocity : InteractionModuleBase<SocketInteractionContext<SocketMes
     [ComponentInteraction("velocity")]
     public async Task Button()
     {
-        Stopwatch timer = new();
-
-        // This is a representation of the time it takes for the bot to send a request to Discord and get a response
-        // Not the actual ping, as the bot uses a websocket connection to Discord
-        // Too bad
-        timer.Start();
-        await new HttpClient().GetAsync("https://discord.com/api/v9");
-        timer.Stop();
-
         await Context.Interaction.UpdateAsync(p =>
         {
             p.Components = new ComponentBuilder()
@@ -48,7 +38,7 @@ public class Velocity : InteractionModuleBase<SocketInteractionContext<SocketMes
             embed: new EmbedBuilder()
                 .WithColor(BotConfig.EmbedColor)
                 .WithTitle("__Adramelech Velocity Test__")
-                .WithDescription($"Response time from our servers to Discord is {timer.ElapsedMilliseconds}ms")
+                .WithDescription($"Response time from our servers to Discord is {Context.Client.Latency}ms")
                 .Build(),
             messageReference: Context.MessageReference());
     }

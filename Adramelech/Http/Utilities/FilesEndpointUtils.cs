@@ -1,9 +1,10 @@
 ﻿using Adramelech.Configuration;
+using Discord;
 using Discord.WebSocket;
 
 namespace Adramelech.Http.Utilities;
 
-public class FilesEndpointUtils
+public static class FilesEndpointUtils
 {
     public static async Task<SocketTextChannel?> GetChannel(DiscordSocketClient botClient)
     {
@@ -15,6 +16,24 @@ public class FilesEndpointUtils
         return channel as SocketTextChannel;
     }
 
-    public static string GetExtension(string contentType) =>
-        MimeMapping.MimeUtility.GetExtensions(contentType).FirstOrDefault() ?? "txt";
+    public static async Task<(List<IMessage>, bool)> GetAllMessages(this SocketTextChannel channel,
+        IEnumerable<ulong> ids)
+    {
+        var messages = new List<IMessage>();
+        var missing = false;
+
+        foreach (var id in ids)
+        {
+            var message = await channel.GetMessageAsync(id);
+            if (message is null)
+            {
+                missing = true;
+                continue;
+            }
+
+            messages.Add(message);
+        }
+
+        return (messages, missing);
+    }
 }

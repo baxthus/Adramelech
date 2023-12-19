@@ -38,12 +38,12 @@ public class Covid : InteractionModuleBase<SocketInteractionContext<SocketSlashC
         await FollowupAsync(embed: new EmbedBuilder()
             .WithColor(BotConfig.EmbedColor)
             .WithTitle($"__Covid Stats for {local}__")
-            .WithDescription($"Cases: {response.Cases}\n" +
-                             $"Today Cases: {response.TodayCases}\n" +
-                             $"Deaths: {response.Deaths}\n" +
-                             $"Today Deaths: {response.TodayDeaths}\n" +
-                             $"Recovered: {response.Recovered}\n" +
-                             $"Today Recovered: {response.TodayRecovered}")
+            .WithDescription($"**Cases:** `{response.Cases}`\n" +
+                             $"**Today Cases:** `{response.TodayCases}`\n" +
+                             $"**Deaths:** `{response.Deaths}`\n" +
+                             $"**Today Deaths:** `{response.TodayDeaths}`\n" +
+                             $"**Recovered:** `{response.Recovered}`\n" +
+                             $"**Today Recovered:** `{response.TodayRecovered}`")
             .WithFooter($"Powered by disease.sh")
             .Build());
     }

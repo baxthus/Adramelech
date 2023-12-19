@@ -14,9 +14,9 @@ public class Server : InteractionModuleBase<SocketInteractionContext<SocketSlash
         var guildOwner = Context.Guild.Owner;
         var createdAt = Context.Guild.CreatedAt.ToUnixTimeSeconds();
 
-        var premiumTier = Context.Guild.PremiumTier != PremiumTier.None
-            ? $" (Level {Context.Guild.PremiumTier})"
-            : string.Empty;
+        var premiumTier = Context.Guild.PremiumTier == PremiumTier.None
+            ? string.Empty
+            : $" (Level {Context.Guild.PremiumTier})";
 
         await RespondAsync(embed: new EmbedBuilder()
             .WithColor(BotConfig.EmbedColor)

@@ -16,4 +16,8 @@ public static class FormatUtils
         1 => text.ToUpper(),
         _ => text[0].ToString().ToUpper() + text[1..]
     };
+
+    public static string Centralize(this string text, int length, char paddingChar = ' ') =>
+        text.PadLeft((length - text.Length) / 2 + text.Length, paddingChar)
+            .PadRight(length, paddingChar);
 }

@@ -18,7 +18,7 @@ public class HttpServer
         _botClient = botClient;
 
         _listener = new HttpListener();
-        _listener.Prefixes.Add($"http://localhost:{port}/");
+        _listener.Prefixes.Add($"http://+:{port}/");
     }
 
     public async Task InitializeAsync()

@@ -1,10 +1,14 @@
 ﻿using System.Net;
+using Adramelech.Database;
 using Adramelech.Http.Attributes;
 using Adramelech.Http.Common;
 using Adramelech.Http.Extensions;
+using Adramelech.Http.Schemas;
 using Adramelech.Http.Utilities;
 using Adramelech.Utilities;
 using MongoDB.Bson;
+using Newtonsoft.Json.Serialization;
+using Serilog;
 
 namespace Adramelech.Http.Endpoints.Files;
 
@@ -38,37 +42,56 @@ public class UploadEndpoint : EndpointBase
             chunks.Add(chunk);
         }
 
-        var ids = new List<ulong>();
-
-        var fileId = ObjectId.GenerateNewId();
-        var fileName = Request.QueryString["fileName"]?.Split(".")[0];
-        var totalChunks = chunks.Count;
+        var file = new FileSchema
+        {
+            Id = ObjectId.GenerateNewId(),
+            CreatedAt = ObjectId.GenerateNewId().CreationTime,
+            FileName = Request.QueryString["fileName"]?.Split(".")[0],
+            ContentType = Request.Headers["Content-Type"] ?? "application/octet-stream",
+            TotalChunks = chunks.Count,
+            Chunks = []
+        };
 
         foreach (var chunk in chunks)
         {
-            var fileInfo = new File
+            var chunkInfo = new FileChunkSchema
             {
-                Id = fileId,
-                CreatedAt = fileId.CreationTime,
-                FileName = fileName,
-                TotalChunks = totalChunks,
                 CurrentChunk = chunks.IndexOf(chunk) + 1
             };
 
-            var message =
-                await channel.SendFileAsync(new MemoryStream(chunk), $"file", JsonUtils.ToJson(fileInfo));
-            ids.Add(message.Id);
+            var content = new MessageSchema
+            {
+                Id = file.Id,
+                TotalChunks = file.TotalChunks,
+                CurrentChunk = chunkInfo.CurrentChunk
+            };
+
+            var message = await channel.SendFileAsync(new MemoryStream(chunk), file.FileName ?? "file",
+                content.ToJson(new KebabCaseNamingStrategy()));
+            chunkInfo.MessageId = message.Id;
+            file.Chunks.Add(chunkInfo);
         }
 
-        await Context.RespondAsync(JsonUtils.ToJson(ids), contentType: "application/json");
-    }
-}
+        try
+        {
+            await DatabaseManager.Files.InsertOneAsync(file);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Failed to insert file into database");
+            await Context.RespondAsync("Failed to insert file into database", HttpStatusCode.InternalServerError);
 
-internal struct File
-{
-    public ObjectId Id { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public string? FileName { get; set; }
-    public int TotalChunks { get; set; }
-    public int CurrentChunk { get; set; }
+            foreach (var message in file.Chunks)
+                await channel.DeleteMessageAsync(message.MessageId);
+        }
+
+        await Context.RespondAsync(file.ToJson(new CamelCaseNamingStrategy()), contentType: "application/json");
+    }
+
+    private struct MessageSchema
+    {
+        public ObjectId Id { get; set; }
+        public int TotalChunks { get; set; }
+        public int CurrentChunk { get; set; }
+    }
 }

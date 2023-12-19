@@ -155,7 +155,7 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
     {
         var response = await $"{BaseUrl}/users/{user}/social_accounts".Request<Social[]>(OtherConfig.UserAgent);
         if (response.IsDefault())
-            return (new List<Social>(), "No socials found");
+            return ([], "No socials found");
 
         StringBuilder builder = new();
 

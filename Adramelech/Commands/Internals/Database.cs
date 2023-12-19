@@ -2,6 +2,7 @@
 using Adramelech.Configuration;
 using Adramelech.Database;
 using Adramelech.Extensions;
+using Adramelech.Utilities;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -24,23 +25,26 @@ public class Database : InteractionModuleBase<SocketInteractionContext<SocketSla
 
             // Yeah, I know this is not really random, but it's good enough for me
             var apiToken = Guid.NewGuid().ToString("N");
-
-            var filter = Builders<ConfigSchema>.Filter.Eq(x => x.Key, "ApiToken");
+            var salt = EncryptUtils.GenSalt();
+            var hash = EncryptUtils.GetHash(apiToken, salt);
 
             try
             {
-                var exist = await DatabaseManager.Config.Find(filter).AnyAsync();
+                await DatabaseManager.Config.DeleteOneAsync(x => x.Key == "ApiToken");
+                await DatabaseManager.Config.DeleteOneAsync(x => x.Key == "ApiTokenSalt");
 
-                if (exist)
-                    await DatabaseManager.Config.UpdateOneAsync(filter,
-                        Builders<ConfigSchema>.Update.Set(x => x.Value, apiToken));
-                else
-                    await DatabaseManager.Config.InsertOneAsync(new ConfigSchema
-                    {
-                        Id = ObjectId.GenerateNewId(),
-                        Key = "ApiToken",
-                        Value = apiToken
-                    });
+                await DatabaseManager.Config.InsertOneAsync(new ConfigSchema
+                {
+                    Id = ObjectId.GenerateNewId(),
+                    Key = "ApiToken",
+                    Value = hash
+                });
+                await DatabaseManager.Config.InsertOneAsync(new ConfigSchema
+                {
+                    Id = ObjectId.GenerateNewId(),
+                    Key = "ApiTokenSalt",
+                    Value = salt
+                });
             }
             catch
             {
@@ -198,7 +202,7 @@ public class Database : InteractionModuleBase<SocketInteractionContext<SocketSla
                 return;
             }
 
-            if (!songs.Any())
+            if (songs.Count == 0)
             {
                 await Context.SendError("No songs found in database.", true);
                 return;
