@@ -16,8 +16,9 @@ public static class InteractionContextExtension
     /// <param name="context">The interaction context (can be implicit)</param>
     /// <param name="description">The description of the error (optional)</param>
     /// <param name="origin">The origin of the interaction; default is <see cref="InteractionOrigin.SlashCommand"/></param>
+    /// <param name="toDm">True if the error should be sent to the user's DM; default is false</param>
     private static async Task SendError(this IInteractionContext context, string? description = null,
-        InteractionOrigin origin = InteractionOrigin.SlashCommand)
+        InteractionOrigin origin = InteractionOrigin.SlashCommand, bool toDm = false)
     {
         var embed = description is null
             ? new EmbedBuilder()
@@ -30,6 +31,12 @@ public static class InteractionContextExtension
                 .WithDescription(description)
                 .Build();
 
+        if (toDm)
+        {
+            await context.User.SendMessageAsync(embed: embed);
+            return;
+        }
+
         switch (origin)
         {
             case InteractionOrigin.SlashCommand:
@@ -37,20 +44,6 @@ public static class InteractionContextExtension
                 break;
             case InteractionOrigin.SlashCommandDeferred:
                 // TODO: Find a better way to send error message when deferred
-                // === Description of the problem ===
-                // If the initial defer (done by the command) is not ephemeral, the follow up message can't be ephemeral.
-                // This cause a problem because the error message have to be ephemeral.
-                // === Currently solution ===
-                // 1. Follow up with a dummy message that is not ephemeral.
-                // 2. Delete the dummy message.
-                // 3. Follow up with a ephemeral error message responding to the dummy message.
-                // That way the error message is ephemeral.
-                // === Problems with the current solution ===
-                // 1. The dummy message appear for a short time.
-                //  - People with message loggers will see the dummy message.
-                // 2. The follow up ephemeral error message reply to the deleted dummy message.
-                //  - This cause the reply indicator to show the replayed message as deleted, which makes the UI ugly.
-                // === END ===
                 // NOTE: Every command that uses a external API should be deferred.
                 await context.Interaction.FollowupAsync("opps...")
                     .ContinueWith(async x => await x.Result.DeleteAsync());
@@ -82,20 +75,23 @@ public static class InteractionContextExtension
     /// <param name="context">The interaction context (can be implicit)</param>
     /// <param name="description">The description of the error (optional)</param>
     /// <param name="isDeferred">True if the interaction is deferred; default is false</param>
-    /// <remarks>This is a overload for <see cref="SendError(IInteractionContext,string?,InteractionOrigin)"/></remarks>
-    public static async Task SendError(this SocketInteractionContext<SocketSlashCommand> context,
-        string? description = null, bool isDeferred = false) =>
-        await SendError(context, description,
-            isDeferred ? InteractionOrigin.SlashCommandDeferred : InteractionOrigin.SlashCommand);
+    /// <param name="toDm">True if the error should be sent to the user's DM; default is false</param>
+    /// <remarks>This is a overload for <see cref="SendError(IInteractionContext,string?,InteractionOrigin,bool)"/></remarks>
+    public static Task SendError(this SocketInteractionContext<SocketSlashCommand> context,
+        string? description = null, bool isDeferred = false, bool toDm = false) =>
+        SendError(context, description,
+            isDeferred ? InteractionOrigin.SlashCommandDeferred : InteractionOrigin.SlashCommand, toDm);
 
     /// <summary>
     /// Respond with a ephemeral error message
     /// </summary>
     /// <param name="context">The interaction context (can be implicit)</param>
     /// <param name="description">The description of the error (optional)</param>
-    /// <remarks>This is a overload for <see cref="SendError(IInteractionContext,string?,InteractionOrigin)"/></remarks>
-    public static async Task SendError(this SocketInteractionContext<SocketMessageComponent> context,
-        string? description = null) => await SendError(context, description, InteractionOrigin.Component);
+    /// <param name="toDm">True if the error should be sent to the user's DM; default is false</param>
+    /// <remarks>This is a overload for <see cref="SendError(IInteractionContext,string?,InteractionOrigin,bool)"/></remarks>
+    public static Task SendError(this SocketInteractionContext<SocketMessageComponent> context,
+        string? description = null, bool toDm = false) =>
+        SendError(context, description, InteractionOrigin.Component, toDm);
 
     /// <summary>
     /// Get the <see cref="MessageReference"/> from a <see cref="IInteractionContext"/>

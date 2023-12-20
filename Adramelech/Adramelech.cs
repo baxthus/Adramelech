@@ -2,6 +2,7 @@
 using Adramelech.Configuration;
 using Adramelech.Database;
 using Adramelech.Http;
+using Adramelech.Logging;
 using Adramelech.Services;
 using Discord;
 using Discord.Interactions;
@@ -21,11 +22,7 @@ public class Adramelech
 
     private async Task MainAsync()
     {
-        Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Debug()
-            .Enrich.FromLogContext()
-            .WriteTo.Console()
-            .CreateLogger();
+        Log.Logger = Loggers.Default;
 
         DatabaseManager.Connect();
 
