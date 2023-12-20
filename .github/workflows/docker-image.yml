@@ -18,9 +18,9 @@ jobs:
         context: .
         tags: adramelech:latest
         file: ./Adramelech/Dockerfile
-        outputs: type=tar,dest=/tmp/adramelech.tar
+        outputs: type=local,dest=/tmp/adramelech-${{ github.sha }}
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: adramelech
-        path: /tmp/adramelech.tar
+        path: /tmp/adramelech-${{ github.sha }}/app
