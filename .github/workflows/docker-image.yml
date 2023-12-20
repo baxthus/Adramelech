@@ -1,0 +1,23 @@
+name: Docker Image CI
+
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    - name: Build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        tags: adramelech:latest
+        file: ./Adramelech/Dockerfile
+        outputs: type=local,dest=/tmp/adramelech-${{ github.sha }}
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: adramelech
+        path: /tmp/adramelech-${{ github.sha }}/app
