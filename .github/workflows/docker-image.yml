@@ -15,11 +15,11 @@ jobs:
     - name: Build
       uses: docker/build-push-action@v5
       with:
-        tags: user/app:${{ github.sha }}
+        tags: adramelech:latest
         file: ./Adramelech/Dockerfile
-        outputs: type=docker,dest=/tmp/myimage.tar
+        outputs: type=local,dest=/tmp/adramelech
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: adramelech-${{ github.sha }}
-        path: /tmp/myimage.tar
+        name: adramelech
+        path: /tmp/adramelech
