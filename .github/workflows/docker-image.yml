@@ -15,6 +15,7 @@ jobs:
     - name: Build
       uses: docker/build-push-action@v5
       with:
+        context: ./app
         tags: adramelech:latest
         file: ./Adramelech/Dockerfile
         outputs: type=tar,dest=/tmp/adramelech.tar
