@@ -15,7 +15,6 @@ jobs:
     - name: Build
       uses: docker/build-push-action@v5
       with:
-        push: true
         tags: user/app:${{ github.sha }}
         file: ./Adramelech/Dockerfile
         outputs: type=docker,dest=/tmp/myimage.tar
