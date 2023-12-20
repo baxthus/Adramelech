@@ -22,10 +22,7 @@ public static class DatabaseManager
 
         var connectionString = Environment.GetEnvironmentVariable("MONGODB_CONNECTION_STRING");
         if (string.IsNullOrEmpty(connectionString))
-        {
-            Log.Fatal("MongoDB connection string not found in environment variables.");
-            Environment.Exit(1);
-        }
+            throw new Exception("MONGODB_CONNECTION_STRING environment variable is not set.");
 
         var settings = MongoClientSettings.FromConnectionString(connectionString);
         settings.ServerApi = new ServerApi(ServerApiVersion.V1);
@@ -47,8 +44,7 @@ public static class DatabaseManager
         }
         catch (Exception e)
         {
-            Log.Fatal(e, "Failed to connect to MongoDB.");
-            Environment.Exit(1);
+            throw new Exception("Failed to connect to MongoDB.", e);
         }
 
         Log.Debug("Opened database connection, Database: {Database}", AdramelechDb.DatabaseNamespace.DatabaseName);
