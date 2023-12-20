@@ -11,4 +11,5 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Build the Docker image
-      run: docker build ./Adramelech --file Dockerfile --tag adramelech:$(date +%s)
+      run: docker build . --file Dockerfile --tag adramelech:$(date +%s)
+      working-directory: ./Adramelech
