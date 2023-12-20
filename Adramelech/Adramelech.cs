@@ -4,6 +4,7 @@ using Adramelech.Database;
 using Adramelech.Http;
 using Adramelech.Logging;
 using Adramelech.Services;
+using Adramelech.Tools;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -22,6 +23,8 @@ public class Adramelech
 
     private async Task MainAsync()
     {
+        DotEnv.Load();
+
         Log.Logger = Loggers.Default;
 
         DatabaseManager.Connect();
