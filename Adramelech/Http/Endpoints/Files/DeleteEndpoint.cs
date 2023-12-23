@@ -40,12 +40,8 @@ public class DeleteEndpoint : EndpointBase
 
         var filter = Builders<FileSchema>.Filter.Eq(x => x.Id, objectId);
 
-        FileSchema file;
-        try
-        {
-            file = await DatabaseManager.Files.Find(filter).FirstOrDefaultAsync();
-        }
-        catch (Exception e)
+        var (file, e) = await ExceptionUtils.TryAsync(() => DatabaseManager.Files.Find(filter).FirstOrDefaultAsync());
+        if (e is not null)
         {
             Log.Error(e, "Failed to query database");
             await Context.RespondAsync("Failed to query database", HttpStatusCode.InternalServerError);
@@ -60,15 +56,12 @@ public class DeleteEndpoint : EndpointBase
 
         var (messages, _) = await channel.GetAllMessages(file.Chunks.Select(x => x.MessageId));
 
-        var tasks = messages.Select(x => x.DeleteAsync());
-        await Task.WhenAll(tasks);
+        await channel.DeleteMessagesAsync(messages);
 
-        try
+        var (_, ex) = await ExceptionUtils.TryAsync(() => DatabaseManager.Files.DeleteOneAsync(filter));
+        if (ex is not null)
         {
-            await DatabaseManager.Files.DeleteOneAsync(filter);
-        }
-        catch
-        {
+            Log.Error(ex, "Failed to delete file");
             await Context.RespondAsync("Failed to delete file", HttpStatusCode.InternalServerError);
             return;
         }

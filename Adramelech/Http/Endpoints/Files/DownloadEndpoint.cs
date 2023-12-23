@@ -35,12 +35,9 @@ public class DownloadEndpoint : EndpointBase
 
         var filter = Builders<FileSchema>.Filter.Eq(x => x.Id, ObjectId.Parse(id));
 
-        FileSchema file;
-        try
-        {
-            file = await DatabaseManager.Files.Find(filter).FirstOrDefaultAsync();
-        }
-        catch (Exception e)
+        var (file, e) =
+            await ExceptionUtils.TryAsync(() => DatabaseManager.Files.Find(filter).FirstOrDefaultAsync());
+        if (e is not null)
         {
             Log.Error(e, "Failed to query database");
             await Context.RespondAsync("Failed to query database", HttpStatusCode.InternalServerError);
@@ -58,14 +55,7 @@ public class DownloadEndpoint : EndpointBase
         {
             await Context.RespondAsync("One or more chunks are missing", HttpStatusCode.NotFound);
 
-            try
-            {
-                await DatabaseManager.Files.DeleteOneAsync(filter);
-            }
-            catch
-            {
-                // ignored
-            }
+            await ExceptionUtils.TryAsync(() => DatabaseManager.Files.DeleteOneAsync(filter));
 
             return;
         }
@@ -74,9 +64,10 @@ public class DownloadEndpoint : EndpointBase
 
         foreach (var message in messages)
         {
-            var (chunk, failed) = await DownloadPart(message);
-            if (failed)
+            var (chunk, ex) = await ExceptionUtils.TryAsync(() => DownloadPart(message));
+            if (ex is not null)
             {
+                Log.Error(ex, "Failed to download chunk");
                 await Context.RespondAsync("Failed to download one or more chunks", HttpStatusCode.BadGateway);
                 return;
             }
@@ -95,14 +86,14 @@ public class DownloadEndpoint : EndpointBase
         await Context.RespondAsync(buffer, contentType: file.ContentType);
     }
 
-    private static async Task<(byte[]?, bool)> DownloadPart(IMessage message)
+    private static async Task<byte[]> DownloadPart(IMessage message)
     {
         var attachment = message.Attachments.FirstOrDefault();
         if (attachment is null)
-            return (null, true);
+            throw new InvalidOperationException("Message has no attachments");
 
         var response = await attachment.Url.Request<byte[]>();
-        return response is null ? (null, true) : (response, false);
+        return response ?? throw new InvalidOperationException("Failed to download attachment");
     }
 
     private static byte[] CombineBytes(List<byte[]> bytes)
