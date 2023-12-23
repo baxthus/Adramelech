@@ -3,7 +3,6 @@ using Adramelech.Database;
 using Adramelech.Http.Attributes;
 using Adramelech.Http.Common;
 using Adramelech.Http.Extensions;
-using Adramelech.Http.Schemas;
 using Adramelech.Utilities;
 using MongoDB.Driver;
 using Newtonsoft.Json.Serialization;
@@ -16,18 +15,14 @@ public class ListEndpoint : EndpointBase
 {
     protected override async Task HandleAsync()
     {
-        List<FileSchema> files;
-        try
-        {
-            files = await DatabaseManager.Files.Find(_ => true).ToListAsync();
-        }
-        catch
+        var (files, ex) = await ExceptionUtils.TryAsync(() => DatabaseManager.Files.Find(_ => true).ToListAsync());
+        if (ex is not null)
         {
             await Context.RespondAsync("Failed to query database", HttpStatusCode.InternalServerError);
             return;
         }
 
-        if (files.Count == 0)
+        if (files!.Count == 0)
         {
             await Context.RespondAsync("No files found", HttpStatusCode.NotFound);
             return;

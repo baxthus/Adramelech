@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Text;
+using Adramelech.Utilities;
 using Serilog;
 
 namespace Adramelech.Http.Extensions;
@@ -16,21 +17,14 @@ public static class HttpListenerContextExtension
         response.ContentLength64 = buffer.Length;
 
         // This take me so much time to figure out. I hate asynchronous programming
-        await Task.Factory.StartNew(async () =>
+        await Task.Run(async () =>
         {
-            try
-            {
-                await response.OutputStream.WriteAsync(buffer);
-            }
-            catch (Exception e)
-            {
-                Log.Error(e, "Failed to write to output stream");
-            }
-            finally
-            {
-                response.Close();
-            }
-        }, TaskCreationOptions.LongRunning);
+            var exception = await ExceptionUtils.TryAndFinallyAsync(
+                async () => await response.OutputStream.WriteAsync(buffer),
+                response.Close);
+            if (exception is not null)
+                Log.Error(exception, "Failed to write to output stream");
+        });
     }
 
     public static Task RespondAsync(this HttpListenerContext context, string content,

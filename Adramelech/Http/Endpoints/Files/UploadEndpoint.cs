@@ -18,10 +18,17 @@ public class UploadEndpoint : EndpointBase
 {
     protected override async Task HandleAsync()
     {
-        var body = GetBody();
-        if (body is null)
+        var (body, exception) = ExceptionUtils.Try(GetBody);
+        if (exception is not null)
         {
-            await Context.RespondAsync("Missing body", HttpStatusCode.BadRequest);
+            if (exception is InvalidOperationException)
+            {
+                await Context.RespondAsync("Missing body", HttpStatusCode.BadRequest);
+                return;
+            }
+
+            Log.Error(exception, "Failed to get body");
+            await Context.RespondAsync("Failed to get body", HttpStatusCode.InternalServerError);
             return;
         }
 
@@ -34,9 +41,8 @@ public class UploadEndpoint : EndpointBase
 
         var chunks = new List<byte[]>();
 
-        // Separate in 8mb chunks
-        const int chunkSize = 8 * 1024 * 1024;
-        for (var i = 0; i < body.Length; i += chunkSize)
+        const int chunkSize = 8 * 1024 * 1024; // 8Mb
+        for (var i = 0; i < body!.Length; i += chunkSize)
         {
             var chunk = body[i..Math.Min(i + chunkSize, body.Length)];
             chunks.Add(chunk);
@@ -66,23 +72,31 @@ public class UploadEndpoint : EndpointBase
                 CurrentChunk = chunkInfo.CurrentChunk
             };
 
-            var message = await channel.SendFileAsync(new MemoryStream(chunk), file.FileName ?? "file",
-                content.ToJson(new KebabCaseNamingStrategy()));
-            chunkInfo.MessageId = message.Id;
+            var (message, e) = await ExceptionUtils.TryAsync(() =>
+                channel.SendFileAsync(new MemoryStream(chunk), file.FileName ?? "file",
+                    content.ToJson(new KebabCaseNamingStrategy())));
+            if (e is not null)
+            {
+                Log.Error(e, "Failed to send file chunk");
+                await Context.RespondAsync("Failed to send file chunk", HttpStatusCode.InternalServerError);
+
+                return;
+            }
+
+            chunkInfo.MessageId = message!.Id;
             file.Chunks.Add(chunkInfo);
         }
 
-        try
+        var ex = await ExceptionUtils.TryAsync(() => DatabaseManager.Files.InsertOneAsync(file));
+        if (ex is not null)
         {
-            await DatabaseManager.Files.InsertOneAsync(file);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "Failed to insert file into database");
+            Log.Error(ex, "Failed to insert file into database");
             await Context.RespondAsync("Failed to insert file into database", HttpStatusCode.InternalServerError);
 
             foreach (var message in file.Chunks)
                 await channel.DeleteMessageAsync(message.MessageId);
+
+            return;
         }
 
         await Context.RespondAsync(file.ToJson(new CamelCaseNamingStrategy()), contentType: "application/json");
