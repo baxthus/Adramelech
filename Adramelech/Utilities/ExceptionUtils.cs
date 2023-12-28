@@ -13,7 +13,7 @@ public static class ExceptionUtils
     /// <param name="func">The function to invoke</param>
     /// <typeparam name="T">The type of the result (can be inferred)</typeparam>
     /// <returns>The tuple of the result and the exception thrown</returns>
-    public static Result<T?> Try<T>(this Func<T> func)
+    public static Result<T> Try<T>(this Func<T> func)
     {
         try
         {
@@ -50,7 +50,7 @@ public static class ExceptionUtils
     /// <param name="func">The function to invoke</param>
     /// <typeparam name="T">The type of the result (can be inferred)</typeparam>
     /// <returns>The tuple of the result and the exception thrown</returns>
-    public static async Task<Result<T?>> TryAsync<T>(this Func<Task<T>> func)
+    public static async Task<Result<T>> TryAsync<T>(this Func<Task<T>> func)
     {
         try
         {

@@ -22,9 +22,9 @@ public class Result
     }
 
     public static Result Fail(Exception exception) => new(false, exception);
-    public static Result<T?> Fail<T>(Exception exception) => new(default, false, exception);
+    public static Result<T> Fail<T>(Exception exception) => new(default, false, exception);
     public static Result Ok() => new(true, null);
-    public static Result<T?> Ok<T>(T? value) => new(value, true, null);
+    public static Result<T> Ok<T>(T? value) => new(value, true, null);
 }
 
 public class Result<T> : Result
