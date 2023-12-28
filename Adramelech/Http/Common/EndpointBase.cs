@@ -49,30 +49,30 @@ public abstract class EndpointBase
         Request = request;
         BotClient = botClient;
 
-        var (needsToken, exception) = ExceptionUtils.Try(() => GetAttribute<NeedsTokenAttribute>(this));
-        if (exception is not null)
+        var result = ExceptionUtils.Try(() => GetAttribute<NeedsTokenAttribute>(this));
+        if (result.IsFailure)
         {
-            Log.Error(exception, "Failed to get NeedsTokenAttribute");
+            Log.Error(result.Exception, "Failed to get NeedsTokenAttribute");
             await context.RespondAsync("Failed to verify if token is needed", HttpStatusCode.InternalServerError);
             return;
         }
 
-        _needsToken = needsToken is not null;
+        _needsToken = result.Value is not null;
 
-        var (valid, e) = await ExceptionUtils.TryAsync(ExecuteCheckAsync);
-        if (e is not null)
+        var valid = await ExceptionUtils.TryAsync(ExecuteCheckAsync);
+        if (valid.IsFailure)
         {
-            Log.Error(e, "Failed to execute check");
+            Log.Error(valid.Exception, "Failed to execute check");
             await context.RespondAsync("Failed to execute check", HttpStatusCode.InternalServerError);
             return;
         }
 
-        if (!valid) return;
+        if (!valid.Value) return;
 
-        var ex = await ExceptionUtils.TryAsync(HandleAsync);
-        if (ex is not null)
+        var handle = await ExceptionUtils.TryAsync(HandleAsync);
+        if (handle.IsFailure)
         {
-            Log.Error(ex, "Failed to handle request");
+            Log.Error(handle.Exception, "Failed to handle request");
             await context.RespondAsync("Internal server error", HttpStatusCode.InternalServerError);
         }
     }

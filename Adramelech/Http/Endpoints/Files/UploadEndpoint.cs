@@ -18,19 +18,21 @@ public class UploadEndpoint : EndpointBase
 {
     protected override async Task HandleAsync()
     {
-        var (body, exception) = ExceptionUtils.Try(GetBody);
-        if (exception is not null)
+        var result = ExceptionUtils.Try(GetBody);
+        if (result.IsFailure)
         {
-            if (exception is InvalidOperationException)
+            if (result.Exception is InvalidOperationException)
             {
                 await Context.RespondAsync("Missing body", HttpStatusCode.BadRequest);
                 return;
             }
 
-            Log.Error(exception, "Failed to get body");
+            Log.Error(result.Exception, "Failed to get body");
             await Context.RespondAsync("Failed to get body", HttpStatusCode.InternalServerError);
             return;
         }
+
+        var body = result.Value;
 
         var channel = await FilesEndpointUtils.GetChannel(BotClient);
         if (channel is null)
@@ -72,25 +74,25 @@ public class UploadEndpoint : EndpointBase
                 CurrentChunk = chunkInfo.CurrentChunk
             };
 
-            var (message, e) = await ExceptionUtils.TryAsync(() =>
+            var message = await ExceptionUtils.TryAsync(() =>
                 channel.SendFileAsync(new MemoryStream(chunk), file.FileName ?? "file",
                     content.ToJson(new KebabCaseNamingStrategy())));
-            if (e is not null)
+            if (message.IsFailure)
             {
-                Log.Error(e, "Failed to send file chunk");
+                Log.Error(message.Exception, "Failed to send file chunk");
                 await Context.RespondAsync("Failed to send file chunk", HttpStatusCode.InternalServerError);
 
                 return;
             }
 
-            chunkInfo.MessageId = message!.Id;
+            chunkInfo.MessageId = message.Value!.Id;
             file.Chunks.Add(chunkInfo);
         }
 
-        var ex = await ExceptionUtils.TryAsync(() => DatabaseManager.Files.InsertOneAsync(file));
-        if (ex is not null)
+        var insert = await ExceptionUtils.TryAsync(() => DatabaseManager.Files.InsertOneAsync(file));
+        if (insert.IsFailure)
         {
-            Log.Error(ex, "Failed to insert file into database");
+            Log.Error(insert.Exception, "Failed to insert file into database");
             await Context.RespondAsync("Failed to insert file into database", HttpStatusCode.InternalServerError);
 
             foreach (var message in file.Chunks)

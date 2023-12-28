@@ -40,28 +40,28 @@ public class DeleteEndpoint : EndpointBase
 
         var filter = Builders<FileSchema>.Filter.Eq(x => x.Id, objectId);
 
-        var (file, e) = await ExceptionUtils.TryAsync(() => DatabaseManager.Files.Find(filter).FirstOrDefaultAsync());
-        if (e is not null)
+        var file = await ExceptionUtils.TryAsync(() => DatabaseManager.Files.Find(filter).FirstOrDefaultAsync());
+        if (file.IsFailure)
         {
-            Log.Error(e, "Failed to query database");
+            Log.Error(file.Exception, "Failed to query database");
             await Context.RespondAsync("Failed to query database", HttpStatusCode.InternalServerError);
             return;
         }
 
-        if (file.IsDefault())
+        if (file.Value.IsDefault())
         {
             await Context.RespondAsync("File not found", HttpStatusCode.NotFound);
             return;
         }
 
-        var (messages, _) = await channel.GetAllMessages(file.Chunks.Select(x => x.MessageId));
+        var (messages, _) = await channel.GetAllMessages(file.Value.Chunks.Select(x => x.MessageId));
 
         await channel.DeleteMessagesAsync(messages);
 
-        var (_, ex) = await ExceptionUtils.TryAsync(() => DatabaseManager.Files.DeleteOneAsync(filter));
-        if (ex is not null)
+        var result = await ExceptionUtils.TryAsync(() => DatabaseManager.Files.DeleteOneAsync(filter));
+        if (result.IsFailure)
         {
-            Log.Error(ex, "Failed to delete file");
+            Log.Error(result.Exception, "Failed to delete file");
             await Context.RespondAsync("Failed to delete file", HttpStatusCode.InternalServerError);
             return;
         }
