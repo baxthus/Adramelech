@@ -35,10 +35,10 @@ public class HttpServer
     /// </summary>
     public async Task InitializeAsync()
     {
-        var ex = ExceptionUtils.Try(_listener.Start);
-        if (ex is not null)
+        var result = ExceptionUtils.Try(_listener.Start);
+        if (result.IsFailure)
         {
-            Log.Error(ex, "Failed to start HttpListener");
+            Log.Error(result.Exception, "Failed to start HttpListener");
             return;
         }
 
@@ -66,25 +66,24 @@ public class HttpServer
     {
         var request = context.Request;
 
-        var (endpoint, ex) =
-            ExceptionUtils.Try(() => GetEndpoints().FirstOrDefault(e => e.Path == request.Url?.AbsolutePath));
-        if (ex is not null)
+        var result = ExceptionUtils.Try(() => GetEndpoints().FirstOrDefault(e => e.Path == request.Url?.AbsolutePath));
+        if (result.IsFailure)
         {
-            Log.Error(ex, "Failed to get endpoint");
+            Log.Error(result.Exception, "Failed to get endpoint");
             await context.RespondAsync("Internal server error", HttpStatusCode.InternalServerError);
             return;
         }
 
-        if (endpoint is null)
+        if (result.Value is null)
         {
             await context.RespondAsync("Invalid endpoint", HttpStatusCode.NotFound);
             return;
         }
 
-        var exception = await ExceptionUtils.TryAsync(() => endpoint.HandleRequestAsync(context, request, _botClient));
-        if (exception is not null)
+        var handle = await ExceptionUtils.TryAsync(() => result.Value.HandleRequestAsync(context, request, _botClient));
+        if (handle.IsFailure)
         {
-            Log.Error(exception, "Failed to handle request");
+            Log.Error(handle.Exception, "Failed to handle request");
             await context.RespondAsync("Internal server error", HttpStatusCode.InternalServerError);
         }
     }

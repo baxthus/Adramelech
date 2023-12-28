@@ -35,22 +35,21 @@ public class DownloadEndpoint : EndpointBase
 
         var filter = Builders<FileSchema>.Filter.Eq(x => x.Id, ObjectId.Parse(id));
 
-        var (file, e) =
-            await ExceptionUtils.TryAsync(() => DatabaseManager.Files.Find(filter).FirstOrDefaultAsync());
-        if (e is not null)
+        var file = await ExceptionUtils.TryAsync(() => DatabaseManager.Files.Find(filter).FirstOrDefaultAsync());
+        if (file.IsFailure)
         {
-            Log.Error(e, "Failed to query database");
+            Log.Error(file.Exception, "Failed to query database");
             await Context.RespondAsync("Failed to query database", HttpStatusCode.InternalServerError);
             return;
         }
 
-        if (file.IsDefault())
+        if (file.Value.IsDefault())
         {
             await Context.RespondAsync("File not found", HttpStatusCode.NotFound);
             return;
         }
 
-        var (messages, missing) = await channel.GetAllMessages(file.Chunks.Select(x => x.MessageId));
+        var (messages, missing) = await channel.GetAllMessages(file.Value.Chunks.Select(x => x.MessageId));
         if (missing)
         {
             await Context.RespondAsync("One or more chunks are missing", HttpStatusCode.NotFound);
@@ -64,18 +63,18 @@ public class DownloadEndpoint : EndpointBase
 
         foreach (var message in messages)
         {
-            var (chunk, ex) = await ExceptionUtils.TryAsync(() => DownloadPart(message));
-            if (ex is not null)
+            var chunk = await ExceptionUtils.TryAsync(() => DownloadPart(message));
+            if (chunk.IsFailure)
             {
-                Log.Error(ex, "Failed to download chunk");
+                Log.Error(chunk.Exception, "Failed to download chunk");
                 await Context.RespondAsync("Failed to download one or more chunks", HttpStatusCode.BadGateway);
                 return;
             }
 
-            chunks.Add(chunk!);
+            chunks.Add(chunk.Value!);
         }
 
-        if (file.TotalChunks != chunks.Count)
+        if (file.Value.TotalChunks != chunks.Count)
         {
             await Context.RespondAsync("One or more chunks are missing", HttpStatusCode.NotFound);
             return;
@@ -83,7 +82,7 @@ public class DownloadEndpoint : EndpointBase
 
         var buffer = CombineBytes(chunks);
 
-        await Context.RespondAsync(buffer, contentType: file.ContentType);
+        await Context.RespondAsync(buffer, contentType: file.Value.ContentType);
     }
 
     private static async Task<byte[]> DownloadPart(IMessage message)

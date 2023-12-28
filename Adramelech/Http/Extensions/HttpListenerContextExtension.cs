@@ -19,11 +19,11 @@ public static class HttpListenerContextExtension
         // This take me so much time to figure out. I hate asynchronous programming
         await Task.Run(async () =>
         {
-            var exception = await ExceptionUtils.TryAndFinallyAsync(
+            var result = await ExceptionUtils.TryAndFinallyAsync(
                 async () => await response.OutputStream.WriteAsync(buffer),
                 response.Close);
-            if (exception is not null)
-                Log.Error(exception, "Failed to write to output stream");
+            if (result.IsFailure)
+                Log.Error(result.Exception, "Failed to write to output stream");
         });
     }
 
