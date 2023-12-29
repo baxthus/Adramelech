@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Reflection;
+using Adramelech.Common;
 using Adramelech.Configuration;
 using Adramelech.Http.Attributes;
 using Adramelech.Http.Extensions;
@@ -112,7 +113,7 @@ public abstract class EndpointBase
     /// Executes the check's for the request.
     /// </summary>
     /// <returns>True if the request is valid, false otherwise.</returns>
-    /// <remarks>Throws the same as <see cref="VerifyToken"/>.</remarks>
+    /// <remarks>Can throw... learned that the hard way.</remarks>
     private async Task<bool> ExecuteCheckAsync()
     {
         if (_method == Request.HttpMethod) return _needsToken is not true || await VerifyToken();
@@ -125,15 +126,16 @@ public abstract class EndpointBase
     /// Verifies the token.
     /// </summary>
     /// <returns>True if the token is valid, false otherwise.</returns>
-    /// <remarks>Throws the same as <see cref="EncryptUtils.CompareHash(string, string, string)"/>.</remarks>
     private async Task<bool> VerifyToken()
     {
-        var token = Request.QueryString["token"];
-        if (string.IsNullOrEmpty(token))
+        var result = GetToken();
+        if (result.IsFailure)
         {
-            await Context.RespondAsync("Missing token parameter", HttpStatusCode.BadRequest);
+            await Context.RespondAsync(result.Exception!.Message, HttpStatusCode.BadRequest);
             return false;
         }
+
+        var rawTokens = result.Value!.ToAsyncEnumerable();
 
         var validToken = HttpConfig.Instance.ApiToken;
         if (string.IsNullOrEmpty(validToken))
@@ -142,16 +144,70 @@ public abstract class EndpointBase
             return false;
         }
 
-        var validTokenSalt = HttpConfig.Instance.ApiTokenSalt;
-        if (string.IsNullOrEmpty(validTokenSalt))
+        var validTokenKey = HttpConfig.Instance.ApiTokenKey;
+        if (string.IsNullOrEmpty(validTokenKey))
         {
-            await Context.RespondAsync("No token salt configured", HttpStatusCode.InternalServerError);
+            await Context.RespondAsync("No token key configured", HttpStatusCode.InternalServerError);
             return false;
         }
 
-        if (EncryptUtils.CompareHash(token, validToken, validTokenSalt)) return true;
+        var tokens = await rawTokens.SelectAwait(async token => new Token(
+            token.IsEncrypted ? token.Value : await EncryptUtils.Encrypt(token.Value, validTokenKey)
+        )).ToListAsync();
+
+        if (tokens.Any(token => token.Value == validToken))
+            return true;
 
         await Context.RespondAsync("Invalid token", HttpStatusCode.Forbidden);
         return false;
+    }
+
+    /// <summary>
+    /// Gets the token from the request.
+    /// </summary>
+    /// <returns>The token and if it's hashed.</returns>
+    private Result<List<Token>> GetToken()
+    {
+        var tokens = new List<Token>();
+
+        // For browsers
+        var cookie = Request.Cookies["token"];
+        if (cookie is not null)
+        {
+            if (cookie.Expired)
+            {
+                Request.Cookies.Remove(cookie);
+                return Result.Fail<List<Token>>(new Exception("Token cookie expired"));
+            }
+
+            // Reset expiration date
+            cookie.Expires = DateTime.Now.AddDays(7);
+            // Token stored as a cookie is always encrypted
+            tokens.Add(new Token(cookie.Value, true));
+        }
+
+        // For clients
+        var header = Request.Headers["Authorization"];
+        if (!string.IsNullOrEmpty(header))
+        {
+            if (!header.StartsWith("Bearer"))
+                return Result.Fail<List<Token>>(new Exception("Invalid token header"));
+            tokens.Add(new Token(header.Replace("Bearer ", string.Empty)));
+        }
+
+        // For anyone
+        var query = Request.QueryString["token"];
+        if (!string.IsNullOrEmpty(query))
+            tokens.Add(new Token(query));
+
+        return tokens.Count == 0
+            ? Result.Fail<List<Token>>(new Exception("Missing token header, cookie or query parameter"))
+            : Result.Ok(tokens);
+    }
+
+    private struct Token(string value, bool isEncrypted = false)
+    {
+        public string Value { get; set; } = value;
+        public bool IsEncrypted { get; set; } = isEncrypted;
     }
 }

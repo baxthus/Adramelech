@@ -7,8 +7,9 @@ public class HttpConfig
 {
     private static HttpConfig? _instance;
     public string? ApiToken;
-    public string? ApiTokenSalt;
+    public string? ApiTokenKey;
     public ulong? FilesChannel;
+    public string? BaseUrl;
 
     private HttpConfig() => FetchFromDatabase();
 
@@ -24,11 +25,11 @@ public class HttpConfig
         if (string.IsNullOrEmpty(apiToken))
             apiToken = null;
 
-        var apiTokenSalt = DatabaseManager.Config.Find(x => x.Key == "ApiTokenSalt")
+        var apiTokenKey = DatabaseManager.Config.Find(x => x.Key == "ApiTokenKey")
             .FirstOrDefault()
             .Value;
-        if (string.IsNullOrEmpty(apiTokenSalt))
-            apiTokenSalt = null;
+        if (string.IsNullOrEmpty(apiTokenKey))
+            apiTokenKey = null;
 
         var filesChannelId = DatabaseManager.Config.Find(x => x.Key == "FilesChannelId")
             .FirstOrDefault()
@@ -36,8 +37,19 @@ public class HttpConfig
         if (string.IsNullOrEmpty(filesChannelId))
             filesChannelId = null;
 
+        var baseUrl = DatabaseManager.Config.Find(x => x.Key == "BaseUrl")
+            .FirstOrDefault()
+            .Value;
+        if (string.IsNullOrEmpty(baseUrl))
+            baseUrl = null;
+
+#if DEBUG
+        baseUrl ??= "http://localhost:8000";
+#endif
+
         ApiToken = apiToken;
-        ApiTokenSalt = apiTokenSalt;
+        ApiTokenKey = apiTokenKey;
         FilesChannel = filesChannelId is null ? null : ulong.Parse(filesChannelId);
+        BaseUrl = baseUrl;
     }
 }

@@ -9,34 +9,66 @@ namespace Adramelech.Utilities;
 public static class EncryptUtils
 {
     /// <summary>
-    /// Generates a hash from a password and salt
+    /// Encrypts the specified text using the specified key.
     /// </summary>
-    /// <param name="password">The password to hash</param>
-    /// <param name="salt">The salt to use</param>
-    /// <returns>The hashed password</returns>
-    /// <remarks>Throws the same as <see cref="Encoding.GetBytes(string)"/>, <see cref="SHA256.HashData(byte[])"/> and <see cref="Convert.ToBase64String(byte[])"/>.</remarks>
-    public static string GetHash(string password, string salt) =>
-        Convert.ToBase64String(SHA256.HashData(Encoding.Unicode.GetBytes(string.Concat(salt, password))));
-
-    /// <summary>
-    /// Compares a password to a hash and salt
-    /// </summary>
-    /// <param name="password">The password to compare</param>
-    /// <param name="hash">The hash to compare</param>
-    /// <param name="salt">The salt to use</param>
-    /// <returns>True if the password matches the hash, false otherwise</returns>
-    /// <remarks>Throws the same as <see cref="GetHash(string, string)"/>.</remarks>
-    public static bool CompareHash(string password, string hash, string salt)
+    /// <param name="text">The text.</param>
+    /// <param name="key">The key.</param>
+    /// <returns>The encrypted text.</returns>
+    public static async Task<string> Encrypt(string text, string key)
     {
-        var bash64PasswordHash = GetHash(password, salt);
+        var aesAlg = Aes.Create();
+        aesAlg.Key = Encoding.UTF8.GetBytes(key);
+        aesAlg.IV = new byte[16]; // Initialization vector
+        aesAlg.Padding = PaddingMode.PKCS7;
 
-        return hash == bash64PasswordHash;
+        var encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
+
+        using var output = new MemoryStream();
+        await using var cryptoStream = new CryptoStream(output, encryptor, CryptoStreamMode.Write);
+
+        await cryptoStream.WriteAsync(Encoding.UTF8.GetBytes(text));
+        await cryptoStream.FlushFinalBlockAsync();
+
+        return Convert.ToBase64String(output.ToArray());
     }
 
     /// <summary>
-    /// Generates a random salt
+    /// Decrypts the specified cipher text using the specified key.
     /// </summary>
-    /// <returns>The salt</returns>
-    /// <remarks>Throws the same as <see cref="Convert.ToBase64String(byte[])"/>.</remarks>
-    public static string GenSalt() => Convert.ToBase64String(Guid.NewGuid().ToByteArray());
+    /// <param name="cipherText">The cipher text.</param>
+    /// <param name="key">The key.</param>
+    /// <returns>The decrypted text.</returns>
+    public static async Task<string> Decrypt(string cipherText, string key)
+    {
+        var aesAlg = Aes.Create();
+        aesAlg.Key = Encoding.UTF8.GetBytes(key);
+        aesAlg.IV = new byte[16]; // Initialization vector
+        aesAlg.Padding = PaddingMode.PKCS7;
+
+        var decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
+
+        using var msDecrypt = new MemoryStream(Convert.FromBase64String(cipherText));
+        await using var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read);
+        using var srDecrypt = new StreamReader(csDecrypt);
+
+        return await srDecrypt.ReadToEndAsync();
+    }
+
+    /// <summary>
+    /// Derives a key from the specified password.
+    /// </summary>
+    /// <param name="password">The password.</param>
+    /// <returns>The derived key.</returns>
+    public static string DeriveKey(string password)
+    {
+        var emptySalt = Array.Empty<byte>();
+        const int iterations = 1000;
+        const int derivedKeyLength = 16; // 16 == 128 bits
+        var hashMethod = HashAlgorithmName.SHA384;
+
+        var key = Rfc2898DeriveBytes.Pbkdf2(Encoding.Unicode.GetBytes(password),
+            emptySalt, iterations, hashMethod, derivedKeyLength);
+
+        return Convert.ToBase64String(key);
+    }
 }
