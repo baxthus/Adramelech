@@ -17,12 +17,11 @@ public static class ExceptionUtils
     {
         try
         {
-            // return new Result<T?>(func(), true, null);
-            return Result.Ok(func());
+            return func();
         }
         catch (Exception e)
         {
-            return Result.Fail<T>(e);
+            return e;
         }
     }
 
@@ -36,11 +35,11 @@ public static class ExceptionUtils
         try
         {
             func();
-            return Result.Ok();
+            return true;
         }
         catch (Exception e)
         {
-            return Result.Fail(e);
+            return e;
         }
     }
 
@@ -54,11 +53,11 @@ public static class ExceptionUtils
     {
         try
         {
-            return Result.Ok(await func());
+            return await func();
         }
         catch (Exception e)
         {
-            return Result.Fail<T>(e);
+            return e;
         }
     }
 
@@ -67,11 +66,11 @@ public static class ExceptionUtils
         try
         {
             await func();
-            return Result.Ok();
+            return true;
         }
         catch (Exception e)
         {
-            return Result.Fail(e);
+            return e;
         }
         finally
         {

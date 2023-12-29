@@ -177,7 +177,7 @@ public abstract class EndpointBase
             if (cookie.Expired)
             {
                 Request.Cookies.Remove(cookie);
-                return Result.Fail<List<Token>>(new Exception("Token cookie expired"));
+                return new Exception("Token cookie expired");
             }
 
             // Reset expiration date
@@ -191,7 +191,7 @@ public abstract class EndpointBase
         if (!string.IsNullOrEmpty(header))
         {
             if (!header.StartsWith("Bearer"))
-                return Result.Fail<List<Token>>(new Exception("Invalid token header"));
+                return new Exception("Invalid token header");
             tokens.Add(new Token(header.Replace("Bearer ", string.Empty)));
         }
 
@@ -201,8 +201,8 @@ public abstract class EndpointBase
             tokens.Add(new Token(query));
 
         return tokens.Count == 0
-            ? Result.Fail<List<Token>>(new Exception("Missing token header, cookie or query parameter"))
-            : Result.Ok(tokens);
+            ? new Exception("Missing token header, cookie or query parameter")
+            : tokens;
     }
 
     private struct Token(string value, bool isEncrypted = false)

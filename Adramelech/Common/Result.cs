@@ -21,18 +21,24 @@ public class Result
         }
     }
 
-    public static Result Fail(Exception exception) => new(false, exception);
-    public static Result<T> Fail<T>(Exception exception) => new(default, false, exception);
-    public static Result Ok() => new(true, null);
-    public static Result<T> Ok<T>(T? value) => new(value, true, null);
+    // public static Result Fail(Exception exception) => new(false, exception);
+    // public static Result<T> Fail<T>(Exception exception) => new(default, false, exception);
+    // public static Result Ok() => new(true, null);
+    // public static Result<T> Ok<T>(T? value) => new(value, true, null);
+
+    public static implicit operator Result(Exception exception) => new(false, exception);
+    public static implicit operator Result(bool success) => new(success, null);
 }
 
 public class Result<T> : Result
 {
     public T? Value { get; }
 
-    protected internal Result(T? value, bool success, Exception? exception) : base(success, exception)
+    private Result(T? value, bool success, Exception? exception) : base(success, exception)
     {
         Value = value;
     }
+
+    public static implicit operator Result<T>(Exception exception) => new(default, false, exception);
+    public static implicit operator Result<T>(T? value) => new(value, true, null);
 }
