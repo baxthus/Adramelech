@@ -7,6 +7,7 @@ using Adramelech.Http.Schemas;
 using Adramelech.Http.Utilities;
 using Adramelech.Utilities;
 using MongoDB.Bson;
+using MongoDB.Driver;
 using Newtonsoft.Json.Serialization;
 using Serilog;
 
@@ -54,11 +55,23 @@ public class UploadEndpoint : EndpointBase
         {
             Id = ObjectId.GenerateNewId(),
             CreatedAt = ObjectId.GenerateNewId().CreationTime,
+            Available = false,
             FileName = Request.QueryString["fileName"]?.Split(".")[0],
             ContentType = Request.Headers["Content-Type"] ?? "application/octet-stream",
             TotalChunks = chunks.Count,
             Chunks = []
         };
+
+        var insert = await ExceptionUtils.TryAsync(() => DatabaseManager.Files.InsertOneAsync(file));
+        if (insert.IsFailure)
+        {
+            Log.Error(insert.Exception, "Failed to insert file into database");
+            await Context.RespondAsync("Failed to insert file into database", HttpStatusCode.InternalServerError);
+
+            return;
+        }
+
+        await Context.RespondAsync(file.ToJson(new CamelCaseNamingStrategy()), contentType: "application/json");
 
         foreach (var chunk in chunks)
         {
@@ -89,19 +102,18 @@ public class UploadEndpoint : EndpointBase
             file.Chunks.Add(chunkInfo);
         }
 
-        var insert = await ExceptionUtils.TryAsync(() => DatabaseManager.Files.InsertOneAsync(file));
-        if (insert.IsFailure)
+        file.Available = true;
+
+        var filter = Builders<FileSchema>.Filter.Eq(x => x.Id, file.Id);
+        var update = await ExceptionUtils.TryAsync(() => DatabaseManager.Files.ReplaceOneAsync(filter, file));
+        if (update.IsFailure)
         {
-            Log.Error(insert.Exception, "Failed to insert file into database");
-            await Context.RespondAsync("Failed to insert file into database", HttpStatusCode.InternalServerError);
+            Log.Error(update.Exception, "Failed to update file");
+            await Context.RespondAsync("Failed to update file", HttpStatusCode.InternalServerError);
 
             foreach (var message in file.Chunks)
                 await channel.DeleteMessageAsync(message.MessageId);
-
-            return;
         }
-
-        await Context.RespondAsync(file.ToJson(new CamelCaseNamingStrategy()), contentType: "application/json");
     }
 
     private struct MessageSchema

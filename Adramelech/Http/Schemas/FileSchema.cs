@@ -6,6 +6,7 @@ public struct FileSchema
 {
     public ObjectId Id { get; set; }
     public DateTime CreatedAt { get; set; }
+    public bool Available { get; set; }
     public string? FileName { get; set; }
     public string ContentType { get; set; }
     public int TotalChunks { get; set; }

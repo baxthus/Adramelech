@@ -49,6 +49,12 @@ public class DownloadEndpoint : EndpointBase
             return;
         }
 
+        if (!file.Value.Available)
+        {
+            await Context.RespondAsync("File is not available", HttpStatusCode.NotFound);
+            return;
+        }
+
         var (messages, missing) = await channel.GetAllMessages(file.Value.Chunks.Select(x => x.MessageId));
         if (missing)
         {

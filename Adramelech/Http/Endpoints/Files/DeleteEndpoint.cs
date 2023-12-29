@@ -54,10 +54,6 @@ public class DeleteEndpoint : EndpointBase
             return;
         }
 
-        var (messages, _) = await channel.GetAllMessages(file.Value.Chunks.Select(x => x.MessageId));
-
-        await channel.DeleteMessagesAsync(messages);
-
         var result = await ExceptionUtils.TryAsync(() => DatabaseManager.Files.DeleteOneAsync(filter));
         if (result.IsFailure)
         {
@@ -67,5 +63,10 @@ public class DeleteEndpoint : EndpointBase
         }
 
         await Context.RespondAsync("File deleted");
+
+        var (messages, _) = await channel.GetAllMessages(file.Value.Chunks.Select(x => x.MessageId));
+
+        // Delete after response, because if the deletion fails we can't do nothing about it anyway
+        await channel.DeleteMessagesAsync(messages);
     }
 }
