@@ -25,13 +25,13 @@ public class Database : InteractionModuleBase<SocketInteractionContext<SocketSla
 
             // Yeah, I know this is not really random, but it's good enough for me
             var apiToken = Guid.NewGuid().ToString("N");
-            var salt = EncryptUtils.GenSalt();
-            var hash = EncryptUtils.GetHash(apiToken, salt);
+            var key = EncryptUtils.DeriveKey(apiToken);
+            var hash = await EncryptUtils.Encrypt(apiToken, key);
 
             try
             {
                 await DatabaseManager.Config.DeleteOneAsync(x => x.Key == "ApiToken");
-                await DatabaseManager.Config.DeleteOneAsync(x => x.Key == "ApiTokenSalt");
+                await DatabaseManager.Config.DeleteOneAsync(x => x.Key == "ApiTokenKey");
 
                 await DatabaseManager.Config.InsertOneAsync(new ConfigSchema
                 {
@@ -42,8 +42,8 @@ public class Database : InteractionModuleBase<SocketInteractionContext<SocketSla
                 await DatabaseManager.Config.InsertOneAsync(new ConfigSchema
                 {
                     Id = ObjectId.GenerateNewId(),
-                    Key = "ApiTokenSalt",
-                    Value = salt
+                    Key = "ApiTokenKey",
+                    Value = key
                 });
             }
             catch
@@ -54,12 +54,18 @@ public class Database : InteractionModuleBase<SocketInteractionContext<SocketSla
 
             HttpConfig.Refresh();
 
+            var button = new ComponentBuilder()
+                .WithButton("Setup cookie", style: ButtonStyle.Link,
+                    url: $"{HttpConfig.Instance.BaseUrl}/auth/setup-cookie?token={apiToken}")
+                .Build();
+
             await FollowupAsync(
                 embed: new EmbedBuilder()
                     .WithColor(BotConfig.EmbedColor)
                     .WithTitle("API token regenerated")
                     .WithDescription($"**New API token:** `{apiToken}`")
                     .Build(),
+                components: button,
                 ephemeral: true);
         }
 
