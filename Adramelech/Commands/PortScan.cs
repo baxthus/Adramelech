@@ -2,6 +2,7 @@
 using Adramelech.Data;
 using Adramelech.Extensions;
 using Adramelech.Tools;
+using Adramelech.Utilities;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -69,20 +70,17 @@ public class PortScan : InteractionModuleBase<SocketInteractionContext<SocketSla
         Task.Run(async () =>
         {
             // Cancel the task after 15 minutes
-            using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(15));
+            var cts = new CancellationTokenSource(TimeSpan.FromMinutes(15));
 
-            List<int> result;
-            try
+            var result =
+                await ExceptionUtils.TryAsync(() => new PortScanner(host, ports, Context.User, cts.Token).ScanAsync());
+            if (result.IsFailure)
             {
-                result = await new PortScanner(host, ports, Context.User, cts.Token).ScanAsync();
-            }
-            catch (Exception e)
-            {
-                await Context.SendError(e.Message, toDm: true);
+                await Context.SendError(result.Exception!.Message, toDm: true);
                 return;
             }
 
-            if (result.Count == 0)
+            if (result.Value!.Count == 0)
             {
                 await Context.SendError("No open ports found", toDm: true);
                 return;
@@ -94,7 +92,7 @@ public class PortScan : InteractionModuleBase<SocketInteractionContext<SocketSla
                 .WithDescription("The port scan that you requested is complete, you can see the results below.\n" +
                                  "Be aware that some ports may be closed but still show up as open.\n" +
                                  "Also be aware rate limiting may have occurred, so some ports may not have been scanned.")
-                .AddField("Open ports", $"```{string.Join(", ", result)}```")
+                .AddField(":unlock: Open ports", $"```{string.Join(", ", result.Value)}```")
                 .Build());
         });
 }
