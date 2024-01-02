@@ -47,7 +47,7 @@ public class Adramelech
         services.GetRequiredService<InteractionHandler>().Initialize();
         services.GetRequiredService<CommandHandler>().Initialize();
         services.GetRequiredService<ReadyHandler>().Initialize();
-        await services.GetRequiredService<HttpServer>().InitializeAsync();
+        services.GetRequiredService<HttpServer>().Initialize();
 
         await Task.Delay(-1);
     }

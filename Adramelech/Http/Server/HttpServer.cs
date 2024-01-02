@@ -66,8 +66,14 @@ public class HttpServer
     /// Starts the server
     /// </summary>
     /// <param name="port">The port to listen on</param>
-    public async Task ServeAsync(int port)
+    /// <param name="accepts">
+    /// Higher values mean more connections can be maintained yet at a much slower average response time; fewer connections will be rejected.
+    /// Lower values mean fewer connections can be maintained yet at a much faster average response time; more connections will be rejected.
+    /// </param>
+    public void Serve(int port, int accepts = 4)
     {
+        accepts *= Environment.ProcessorCount;
+
         var listener = new HttpListener();
         listener.Prefixes.Add($"http://+:{port}/");
 
@@ -80,10 +86,21 @@ public class HttpServer
 
         Log.Information("Server listening at {Prefixes}", listener.Prefixes);
 
+        var sem = new Semaphore(accepts, accepts);
+
         while (listener.IsListening)
         {
-            var context = await listener.GetContextAsync();
-            await ListenerCallbackAsync(context);
+            sem.WaitOne();
+
+#pragma warning disable CS4014
+            listener.GetContextAsync().ContinueWith(async task =>
+            {
+                sem.Release();
+
+                var context = await task;
+                await ListenerCallbackAsync(context);
+            });
+#pragma warning restore CS4014
         }
 
         listener.Stop();

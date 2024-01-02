@@ -7,7 +7,7 @@ namespace Adramelech.Http;
 /// </summary>
 public class HttpServer(DiscordSocketClient botClient, int port = 8000)
 {
-    public async Task InitializeAsync()
+    public void Initialize()
     {
         var server = new Server.HttpServer();
 
@@ -16,6 +16,6 @@ public class HttpServer(DiscordSocketClient botClient, int port = 8000)
 
         server.AddDependency(botClient);
 
-        await server.ServeAsync(port);
+        server.Serve(port);
     }
 }
