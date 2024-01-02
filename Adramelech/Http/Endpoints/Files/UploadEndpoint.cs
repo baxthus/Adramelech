@@ -9,7 +9,6 @@ using Adramelech.Utilities;
 using Discord.WebSocket;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using Newtonsoft.Json.Serialization;
 using Serilog;
 
 namespace Adramelech.Http.Endpoints.Files;
@@ -79,7 +78,7 @@ public class UploadEndpoint : EndpointBase
             return;
         }
 
-        await Context.RespondAsync(file.ToJson(new CamelCaseNamingStrategy()), contentType: "application/json");
+        await Context.RespondAsync(JsonUtils.ToJson(file), contentType: "application/json");
 
         foreach (var chunk in chunks)
         {
@@ -96,8 +95,7 @@ public class UploadEndpoint : EndpointBase
             };
 
             var message = await ExceptionUtils.TryAsync(() =>
-                channel.SendFileAsync(new MemoryStream(chunk), file.FileName ?? "file",
-                    content.ToJson(new KebabCaseNamingStrategy())));
+                channel.SendFileAsync(new MemoryStream(chunk), file.FileName ?? "file", JsonUtils.ToJson(content)));
             if (message.IsFailure)
             {
                 Log.Error(message.Exception, "Failed to send file chunk");
