@@ -1,14 +1,14 @@
 ﻿using System.Net;
 using Adramelech.Database;
 using Adramelech.Http.Attributes;
-using Adramelech.Http.Common;
 using Adramelech.Http.Extensions;
 using Adramelech.Http.Schemas;
+using Adramelech.Http.Server;
 using Adramelech.Http.Utilities;
 using Adramelech.Utilities;
+using Discord.WebSocket;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using Newtonsoft.Json.Serialization;
 using Serilog;
 
 namespace Adramelech.Http.Endpoints.Files;
@@ -19,6 +19,13 @@ public class UploadEndpoint : EndpointBase
 {
     protected override async Task HandleAsync()
     {
+        var botClient = ServiceProvider.GetService<DiscordSocketClient>();
+        if (botClient is null)
+        {
+            await Context.RespondAsync("Discord client not found", HttpStatusCode.InternalServerError);
+            return;
+        }
+
         var result = ExceptionUtils.Try(GetBody);
         if (result.IsFailure)
         {
@@ -35,7 +42,7 @@ public class UploadEndpoint : EndpointBase
 
         var body = result.Value;
 
-        var channel = await FilesEndpointUtils.GetChannel(BotClient);
+        var channel = await FilesEndpointUtils.GetChannel(botClient);
         if (channel is null)
         {
             await Context.RespondAsync("Channel not found", HttpStatusCode.InternalServerError);
@@ -71,7 +78,7 @@ public class UploadEndpoint : EndpointBase
             return;
         }
 
-        await Context.RespondAsync(file.ToJson(new CamelCaseNamingStrategy()), contentType: "application/json");
+        await Context.RespondAsync(JsonUtils.ToJson(file), contentType: "application/json");
 
         foreach (var chunk in chunks)
         {
@@ -88,8 +95,7 @@ public class UploadEndpoint : EndpointBase
             };
 
             var message = await ExceptionUtils.TryAsync(() =>
-                channel.SendFileAsync(new MemoryStream(chunk), file.FileName ?? "file",
-                    content.ToJson(new KebabCaseNamingStrategy())));
+                channel.SendFileAsync(new MemoryStream(chunk), file.FileName ?? "file", JsonUtils.ToJson(content)));
             if (message.IsFailure)
             {
                 Log.Error(message.Exception, "Failed to send file chunk");

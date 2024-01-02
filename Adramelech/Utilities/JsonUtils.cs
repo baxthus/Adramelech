@@ -8,6 +8,14 @@ namespace Adramelech.Utilities;
 /// </summary>
 public static class JsonUtils
 {
+    private static readonly JsonSerializerSettings DefaultSettings = new()
+    {
+        ContractResolver = new DefaultContractResolver
+        {
+            NamingStrategy = new CamelCaseNamingStrategy()
+        }
+    };
+
     /// <summary>
     /// Serialize an <see cref="object"/> to an JSON <see cref="string"/>
     /// </summary>
@@ -18,8 +26,7 @@ public static class JsonUtils
     public static string ToJson(this object obj, NamingStrategy? namingStrategy = null) => JsonConvert.SerializeObject(
         obj, namingStrategy switch
         {
-            // Doing this so we don't create a new JsonSerializerSettings if we don't need to
-            null => null,
+            null => DefaultSettings,
             _ => new JsonSerializerSettings
             {
                 ContractResolver = new DefaultContractResolver

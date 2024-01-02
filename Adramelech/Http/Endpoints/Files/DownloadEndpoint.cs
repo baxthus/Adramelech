@@ -1,12 +1,13 @@
 ﻿using System.Net;
 using Adramelech.Database;
 using Adramelech.Http.Attributes;
-using Adramelech.Http.Common;
 using Adramelech.Http.Extensions;
 using Adramelech.Http.Schemas;
+using Adramelech.Http.Server;
 using Adramelech.Http.Utilities;
 using Adramelech.Utilities;
 using Discord;
+using Discord.WebSocket;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Serilog;
@@ -19,6 +20,13 @@ public class DownloadEndpoint : EndpointBase
 {
     protected override async Task HandleAsync()
     {
+        var botClient = ServiceProvider.GetService<DiscordSocketClient>();
+        if (botClient is null)
+        {
+            await Context.RespondAsync("Discord client not found", HttpStatusCode.InternalServerError);
+            return;
+        }
+
         var id = Request.QueryString["id"];
         if (string.IsNullOrEmpty(id))
         {
@@ -26,7 +34,7 @@ public class DownloadEndpoint : EndpointBase
             return;
         }
 
-        var channel = await FilesEndpointUtils.GetChannel(BotClient);
+        var channel = await FilesEndpointUtils.GetChannel(botClient);
         if (channel is null)
         {
             await Context.RespondAsync("Channel not found", HttpStatusCode.InternalServerError);

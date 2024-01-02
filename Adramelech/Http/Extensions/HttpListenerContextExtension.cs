@@ -1,7 +1,6 @@
 ﻿using System.Net;
 using System.Text;
 using Adramelech.Utilities;
-using Serilog;
 
 namespace Adramelech.Http.Extensions;
 
@@ -19,11 +18,9 @@ public static class HttpListenerContextExtension
         // This take me so much time to figure out. I hate asynchronous programming
         await Task.Run(async () =>
         {
-            var result = await ExceptionUtils.TryAndFinallyAsync(
+            await ExceptionUtils.TryAndFinallyAsync(
                 async () => await response.OutputStream.WriteAsync(buffer),
                 response.Close);
-            if (result.IsFailure)
-                Log.Error(result.Exception, "Failed to write to output stream");
         });
     }
 
