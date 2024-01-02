@@ -1,11 +1,12 @@
 ﻿using System.Net;
 using Adramelech.Database;
 using Adramelech.Http.Attributes;
-using Adramelech.Http.Common;
 using Adramelech.Http.Extensions;
 using Adramelech.Http.Schemas;
+using Adramelech.Http.Server;
 using Adramelech.Http.Utilities;
 using Adramelech.Utilities;
+using Discord.WebSocket;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Newtonsoft.Json.Serialization;
@@ -19,6 +20,13 @@ public class UploadEndpoint : EndpointBase
 {
     protected override async Task HandleAsync()
     {
+        var botClient = ServiceProvider.GetService<DiscordSocketClient>();
+        if (botClient is null)
+        {
+            await Context.RespondAsync("Discord client not found", HttpStatusCode.InternalServerError);
+            return;
+        }
+
         var result = ExceptionUtils.Try(GetBody);
         if (result.IsFailure)
         {
@@ -35,7 +43,7 @@ public class UploadEndpoint : EndpointBase
 
         var body = result.Value;
 
-        var channel = await FilesEndpointUtils.GetChannel(BotClient);
+        var channel = await FilesEndpointUtils.GetChannel(botClient);
         if (channel is null)
         {
             await Context.RespondAsync("Channel not found", HttpStatusCode.InternalServerError);

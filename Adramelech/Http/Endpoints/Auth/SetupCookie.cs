@@ -1,8 +1,8 @@
 ﻿using System.Net;
 using Adramelech.Configuration;
 using Adramelech.Http.Attributes;
-using Adramelech.Http.Common;
 using Adramelech.Http.Extensions;
+using Adramelech.Http.Server;
 
 namespace Adramelech.Http.Endpoints.Auth;
 
