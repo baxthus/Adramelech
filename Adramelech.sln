@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Adramelech", "Adramelech\Adramelech.csproj", "{11EBFD9A-8D9F-4078-A100-2146EE7D4C25}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Adramelech.Api", "Adramelech.Api\Adramelech.Api.csproj", "{B37A6CA8-DE81-49EF-81D1-97FA53B50E68}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{11EBFD9A-8D9F-4078-A100-2146EE7D4C25}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{11EBFD9A-8D9F-4078-A100-2146EE7D4C25}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{11EBFD9A-8D9F-4078-A100-2146EE7D4C25}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B37A6CA8-DE81-49EF-81D1-97FA53B50E68}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B37A6CA8-DE81-49EF-81D1-97FA53B50E68}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B37A6CA8-DE81-49EF-81D1-97FA53B50E68}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B37A6CA8-DE81-49EF-81D1-97FA53B50E68}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

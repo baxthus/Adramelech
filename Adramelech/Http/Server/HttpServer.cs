@@ -17,7 +17,7 @@ public class HttpServer
     /// </summary>
     public void AddEndpoints()
     {
-        var endpoints = ExceptionUtils.Try(ReflectionUtils.GetInstances<EndpointBase>);
+        var endpoints = ExceptionUtils.Try(() => ReflectionUtils.GetInstances<EndpointBase>());
         if (endpoints.IsFailure)
         {
             Log.Error(endpoints.Exception, "Failed to get endpoints");
@@ -38,7 +38,7 @@ public class HttpServer
     /// </summary>
     public void AddMiddlewares()
     {
-        var middlewares = ExceptionUtils.Try(ReflectionUtils.GetInstances<MiddlewareBase>);
+        var middlewares = ExceptionUtils.Try(() => ReflectionUtils.GetInstances<MiddlewareBase>());
         if (middlewares.IsFailure)
         {
             Log.Error(middlewares.Exception, "Failed to get middlewares");

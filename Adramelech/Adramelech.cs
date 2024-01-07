@@ -3,6 +3,7 @@ using Adramelech.Configuration;
 using Adramelech.Database;
 using Adramelech.Http;
 using Adramelech.Logging;
+using Adramelech.Server;
 using Adramelech.Services;
 using Adramelech.Tools;
 using Discord;
@@ -47,7 +48,8 @@ public class Adramelech
         services.GetRequiredService<InteractionHandler>().Initialize();
         services.GetRequiredService<CommandHandler>().Initialize();
         services.GetRequiredService<ReadyHandler>().Initialize();
-        services.GetRequiredService<HttpServer>().Initialize();
+        // services.GetRequiredService<HttpServer>().Initialize();
+        await services.GetRequiredService<TcpServer>().InitializeAsync();
 
         await Task.Delay(-1);
     }
@@ -58,7 +60,8 @@ public class Adramelech
         .AddSingleton<InteractionHandler>()
         .AddSingleton<CommandHandler>()
         .AddSingleton<ReadyHandler>()
-        .AddSingleton<HttpServer>()
+        // .AddSingleton<HttpServer>()
+        .AddSingleton<TcpServer>()
         .BuildServiceProvider();
 
     private static async Task LogAsync(LogMessage msg)
