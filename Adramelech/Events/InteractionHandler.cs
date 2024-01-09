@@ -3,30 +3,21 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Serilog;
 
-namespace Adramelech.Services;
+namespace Adramelech.Events;
 
-public class InteractionHandler
+public class InteractionHandler(
+    DiscordSocketClient client,
+    InteractionService interactionService,
+    IServiceProvider services)
 {
-    private readonly DiscordSocketClient _client;
-    private readonly InteractionService _interactionService;
-    private readonly IServiceProvider _services;
-
-    public InteractionHandler(DiscordSocketClient client, InteractionService interactionService,
-        IServiceProvider services)
-    {
-        _client = client;
-        _interactionService = interactionService;
-        _services = services;
-    }
-
-    public void Initialize() => _client.InteractionCreated += HandleInteraction;
+    public void Initialize() => client.InteractionCreated += HandleInteraction;
 
     private async Task HandleInteraction(SocketInteraction interaction)
     {
         try
         {
-            var ctx = CreateGenetic(interaction, _client);
-            await _interactionService.ExecuteCommandAsync(ctx, _services);
+            var ctx = CreateGenetic(interaction, client);
+            await interactionService.ExecuteCommandAsync(ctx, services);
         }
         catch (Exception ex)
         {

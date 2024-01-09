@@ -1,5 +1,5 @@
-﻿using Adramelech.Configuration;
-using Adramelech.Extensions;
+﻿using Adramelech.Extensions;
+using Adramelech.Services;
 using Adramelech.Utilities;
 using Discord;
 using Discord.Interactions;
@@ -22,7 +22,7 @@ public class Short : InteractionModuleBase<SocketInteractionContext<SocketSlashC
         }
 
         await FollowupAsync(embed: new EmbedBuilder()
-            .WithColor(BotConfig.EmbedColor)
+            .WithColor(ConfigService.EmbedColor)
             .WithTitle("__Shortened URL__")
             .AddField(":outbox_tray: Original URL", url)
             .AddField(":inbox_tray: Shortened URL", response)

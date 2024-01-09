@@ -1,4 +1,4 @@
-﻿using Adramelech.Configuration;
+﻿using Adramelech.Services;
 using Discord.Interactions;
 using Discord;
 using Discord.Webhook;
@@ -21,14 +21,15 @@ public class Feedback : InteractionModuleBase<SocketInteractionContext<SocketSla
     }
 }
 
-public class FeedbackModalResponse : InteractionModuleBase<SocketInteractionContext<SocketModal>>
+public class FeedbackModalResponse(ConfigService configService)
+    : InteractionModuleBase<SocketInteractionContext<SocketModal>>
 {
     [ModalInteraction(("feedback_modal"))]
     public async Task Modal(Feedback.FeedbackModal modal)
     {
         var message = modal.Message;
 
-        var webhook = new DiscordWebhookClient(ServicesConfig.Instance.FeedbackWebhook);
+        var webhook = new DiscordWebhookClient(configService.FeedbackWebhook);
 
         await webhook.SendMessageAsync(
             username: "Adramelech Feedback",
@@ -36,7 +37,7 @@ public class FeedbackModalResponse : InteractionModuleBase<SocketInteractionCont
             embeds: new[]
             {
                 new EmbedBuilder()
-                    .WithColor(BotConfig.EmbedColor)
+                    .WithColor(ConfigService.EmbedColor)
                     .WithTitle("__Adramelech Feedback__")
                     .WithDescription($"From `{Context.User.Username}` (`{Context.User.Id}`)")
                     .WithThumbnailUrl(Context.User.GetAvatarUrl(size: 4096))

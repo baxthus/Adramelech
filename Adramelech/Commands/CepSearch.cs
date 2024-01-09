@@ -1,5 +1,5 @@
-﻿using Adramelech.Configuration;
-using Adramelech.Extensions;
+﻿using Adramelech.Extensions;
+using Adramelech.Services;
 using Adramelech.Utilities;
 using Discord;
 using Discord.Interactions;
@@ -56,7 +56,7 @@ public class CepSearch : InteractionModuleBase<SocketInteractionContext<SocketSl
 
         await FollowupAsync(
             embed: new EmbedBuilder()
-                .WithColor(BotConfig.EmbedColor)
+                .WithColor(ConfigService.EmbedColor)
                 .WithTitle("__Adramelech CEP Search__")
                 .AddField(":zap: __**Main**__", mainField, true)
                 .AddField(":earth_americas: __**Location**__", locationField, true)

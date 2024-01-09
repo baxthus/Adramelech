@@ -1,6 +1,6 @@
 ﻿using System.Text;
-using Adramelech.Configuration;
 using Adramelech.Extensions;
+using Adramelech.Services;
 using Adramelech.Utilities;
 using Discord.Interactions;
 using Discord;
@@ -21,7 +21,7 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
     {
         await DeferAsync();
 
-        var response = await $"{BaseUrl}/repos/{user}/{repository}".Request<Repository>(OtherConfig.UserAgent);
+        var response = await $"{BaseUrl}/repos/{user}/{repository}".Request<Repository>(ConfigService.UserAgent);
         if (response.IsDefault())
         {
             await Context.SendError("Failed to get repository information", true);
@@ -50,7 +50,7 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
 
         await FollowupAsync(
             embed: new EmbedBuilder()
-                .WithColor(BotConfig.EmbedColor)
+                .WithColor(ConfigService.EmbedColor)
                 .WithTitle("__Repository Information__")
                 .WithThumbnailUrl(response.Owner.AvatarUrl)
                 .AddField(":zap: **Main**", mainField)
@@ -68,7 +68,7 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
     {
         await DeferAsync();
 
-        var response = await $"{BaseUrl}/users/{user}".Request<User>(OtherConfig.UserAgent);
+        var response = await $"{BaseUrl}/users/{user}".Request<User>(ConfigService.UserAgent);
         if (response.IsDefault())
         {
             await Context.SendError("Failed to get user information", true);
@@ -98,7 +98,7 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
 
         await FollowupAsync(
             embed: new EmbedBuilder()
-                .WithColor(BotConfig.EmbedColor)
+                .WithColor(ConfigService.EmbedColor)
                 .WithTitle("__User Information__")
                 .WithThumbnailUrl(response.AvatarUrl)
                 .AddField(":zap: **Main**", mainField)
@@ -113,7 +113,7 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
     {
         await DeferAsync();
 
-        var response = await $"{BaseUrl}/users/{user}/gists".Request<Gist[]>(OtherConfig.UserAgent);
+        var response = await $"{BaseUrl}/users/{user}/gists".Request<Gist[]>(ConfigService.UserAgent);
         if (response.IsDefault())
         {
             await Context.SendError("Failed to get gist information or user has no gists", true);
@@ -132,7 +132,7 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
 
         await FollowupAsync(
             embed: new EmbedBuilder()
-                .WithColor(BotConfig.EmbedColor)
+                .WithColor(ConfigService.EmbedColor)
                 .WithTitle("__Gist Information__")
                 .WithThumbnailUrl(content.Owner.AvatarUrl)
                 .AddField(":bust_in_silhouette: **User**", userField)
@@ -153,7 +153,7 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
 
     private static async Task<(List<Social>, string)> GetSocials(string user)
     {
-        var response = await $"{BaseUrl}/users/{user}/social_accounts".Request<Social[]>(OtherConfig.UserAgent);
+        var response = await $"{BaseUrl}/users/{user}/social_accounts".Request<Social[]>(ConfigService.UserAgent);
         if (response.IsDefault())
             return ([], "No socials found");
 
@@ -167,7 +167,7 @@ public class Github : InteractionModuleBase<SocketInteractionContext<SocketSlash
 
     private static async Task<string> GetLicense(string key)
     {
-        var response = await $"{BaseUrl}/licenses/{key}".Request<License>(OtherConfig.UserAgent);
+        var response = await $"{BaseUrl}/licenses/{key}".Request<License>(ConfigService.UserAgent);
         if (response.IsDefault())
             return "Failed to get license information";
 
@@ -281,7 +281,7 @@ public class GithubComponents : InteractionModuleBase<SocketInteractionContext<S
 
         var user = (test as ButtonComponent)?.Label;
 
-        var response = await $"{Github.BaseUrl}/users/{user}/gists".Request<Github.Gist[]>(OtherConfig.UserAgent);
+        var response = await $"{Github.BaseUrl}/users/{user}/gists".Request<Github.Gist[]>(ConfigService.UserAgent);
         if (response.IsDefault())
         {
             await Context.SendError("Failed to get gist information or user has no gists");

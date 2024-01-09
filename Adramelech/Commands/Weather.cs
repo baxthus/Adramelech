@@ -1,5 +1,5 @@
-﻿using Adramelech.Configuration;
-using Adramelech.Extensions;
+﻿using Adramelech.Extensions;
+using Adramelech.Services;
 using Adramelech.Utilities;
 using Discord;
 using Discord.Interactions;
@@ -9,7 +9,7 @@ using Newtonsoft.Json;
 
 namespace Adramelech.Commands;
 
-public class Weather : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
+public class Weather(ConfigService configService) : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     private const string OpenWeatherUrl = "https://api.openweathermap.org";
 
@@ -26,7 +26,7 @@ public class Weather : InteractionModuleBase<SocketInteractionContext<SocketSlas
         var coordinates = await OpenWeatherUrl
             .AppendPathSegments("geo", "1.0", "direct")
             .SetQueryParam("q", $"{city},{country}")
-            .SetQueryParam("appid", ServicesConfig.Instance.OpenWeatherKey)
+            .SetQueryParam("appid", configService.OpenWeatherKey)
             .ToString()!
             .Request<OpenWeatherGeo[]>();
         if (coordinates.IsDefault())
@@ -40,7 +40,7 @@ public class Weather : InteractionModuleBase<SocketInteractionContext<SocketSlas
             .AppendPathSegments("data", "2.5", "weather")
             .SetQueryParam("lat", coordinates![0].Lat)
             .SetQueryParam("lon", coordinates[0].Lon)
-            .SetQueryParam("appid", ServicesConfig.Instance.OpenWeatherKey)
+            .SetQueryParam("appid", configService.OpenWeatherKey)
             .SetQueryParam("units", "metric")
             .SetQueryParam("lang", "en")
             .ToString()!
@@ -70,7 +70,7 @@ public class Weather : InteractionModuleBase<SocketInteractionContext<SocketSlas
         var place = weather.Name.IsNullOrEmpty() ? string.Empty : $" in {weather.Name}";
 
         await FollowupAsync(embed: new EmbedBuilder()
-            .WithColor(BotConfig.EmbedColor)
+            .WithColor(ConfigService.EmbedColor)
             .WithTitle($"__Weather{place}__")
             .AddField(":zap: **Main**", mainField)
             .AddField(":cloud: **Weather**", weatherField)

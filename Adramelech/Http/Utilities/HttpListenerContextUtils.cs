@@ -2,9 +2,9 @@
 using System.Text;
 using Adramelech.Utilities;
 
-namespace Adramelech.Http.Extensions;
+namespace Adramelech.Http.Utilities;
 
-public static class HttpListenerContextExtension
+public static class HttpListenerContextUtils
 {
     public static async Task RespondAsync(this HttpListenerContext context, ReadOnlyMemory<byte> buffer,
         HttpStatusCode statusCode = HttpStatusCode.OK, string contentType = "text/plain")
@@ -15,7 +15,6 @@ public static class HttpListenerContextExtension
         response.ContentType = contentType;
         response.ContentLength64 = buffer.Length;
 
-        // This take me so much time to figure out. I hate asynchronous programming
         await Task.Run(async () =>
         {
             await ExceptionUtils.TryAndFinallyAsync(

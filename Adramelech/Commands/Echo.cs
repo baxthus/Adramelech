@@ -1,4 +1,4 @@
-﻿using Adramelech.Configuration;
+﻿using Adramelech.Services;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -34,7 +34,7 @@ public class EchoModalResponse : InteractionModuleBase<SocketInteractionContext<
 
         await RespondAsync(
             embed: new EmbedBuilder()
-                .WithColor(BotConfig.EmbedColor)
+                .WithColor(ConfigService.EmbedColor)
                 .WithTitle("Message sent")
                 .Build(),
             ephemeral: true);

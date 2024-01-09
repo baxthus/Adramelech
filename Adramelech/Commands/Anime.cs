@@ -1,6 +1,6 @@
 ﻿using System.Text;
-using Adramelech.Configuration;
 using Adramelech.Extensions;
+using Adramelech.Services;
 using Adramelech.Utilities;
 using Discord;
 using Discord.Interactions;
@@ -50,7 +50,7 @@ public class Anime : InteractionModuleBase<SocketInteractionContext<SocketSlashC
                 .SetQueryParam("rating", rating)
                 .ToString()!;
 
-            var response = await url.Request<NekosApiResponse>(OtherConfig.UserAgent);
+            var response = await url.Request<NekosApiResponse>(ConfigService.UserAgent);
             if (response.IsDefault())
             {
                 await Context.SendError("Failed to get image", true);
@@ -67,7 +67,7 @@ public class Anime : InteractionModuleBase<SocketInteractionContext<SocketSlashC
             footer.Append("Powered by nekosapi.com");
 
             await FollowupAsync(embed: new EmbedBuilder()
-                .WithColor(BotConfig.EmbedColor)
+                .WithColor(ConfigService.EmbedColor)
                 .WithImageUrl(data.ImageUrl)
                 .WithFooter(footer.ToString())
                 .Build());
@@ -86,7 +86,7 @@ public class Anime : InteractionModuleBase<SocketInteractionContext<SocketSlashC
             }
 
             await FollowupAsync(embed: new EmbedBuilder()
-                .WithColor(BotConfig.EmbedColor)
+                .WithColor(ConfigService.EmbedColor)
                 .WithImageUrl(response.Url)
                 .WithFooter("Powered by nekos.life")
                 .Build());

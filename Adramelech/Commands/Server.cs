@@ -1,4 +1,4 @@
-﻿using Adramelech.Configuration;
+﻿using Adramelech.Services;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -19,7 +19,7 @@ public class Server : InteractionModuleBase<SocketInteractionContext<SocketSlash
             : $" (Level {Context.Guild.PremiumTier})";
 
         await RespondAsync(embed: new EmbedBuilder()
-            .WithColor(BotConfig.EmbedColor)
+            .WithColor(ConfigService.EmbedColor)
             .WithAuthor(Context.Guild.Name, Context.Guild.IconUrl)
             .AddField("Server owner", $"{guildOwner.Username} (`{guildOwner.Id}`)", true)
             .AddField("Server ID", Context.Guild.Id, true)

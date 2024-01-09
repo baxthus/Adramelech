@@ -20,4 +20,10 @@ public static class ReflectionUtils
 
     public static IEnumerable<T> GetAttributes<T>(object obj) where T : Attribute =>
         obj.GetType().GetCustomAttributes(typeof(T), false).Select(a => (T)a);
+
+    public static IEnumerable<KeyValuePair<T, MethodInfo>> GetMethodsFromAttribute<T>(object obj, bool inherit = false)
+        where T : Attribute =>
+        obj.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Select(m => new KeyValuePair<T, MethodInfo>(m.GetCustomAttribute<T>(inherit)!, m))
+            .Where(_ => true);
 }

@@ -1,5 +1,5 @@
-﻿using Adramelech.Configuration;
-using Adramelech.Extensions;
+﻿using Adramelech.Extensions;
+using Adramelech.Services;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -12,7 +12,7 @@ public class Ping : InteractionModuleBase<SocketInteractionContext<SocketSlashCo
     public async Task PingAsync() =>
         await RespondAsync(
             embed: new EmbedBuilder()
-                .WithColor(BotConfig.EmbedColor)
+                .WithColor(ConfigService.EmbedColor)
                 .WithTitle("Pong!")
                 .Build(),
             components: new ComponentBuilder()
@@ -36,7 +36,7 @@ public class Velocity : InteractionModuleBase<SocketInteractionContext<SocketMes
 
         await ReplyAsync(
             embed: new EmbedBuilder()
-                .WithColor(BotConfig.EmbedColor)
+                .WithColor(ConfigService.EmbedColor)
                 .WithTitle("__Adramelech Velocity Test__")
                 .WithDescription($"Response time from our servers to Discord is {Context.Client.Latency}ms")
                 .Build(),

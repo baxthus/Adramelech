@@ -1,9 +1,7 @@
 ﻿using System.Reflection;
-using Adramelech.Configuration;
-using Adramelech.Database;
+using Adramelech.Events;
 using Adramelech.Http;
 using Adramelech.Logging;
-using Adramelech.Server;
 using Adramelech.Services;
 using Adramelech.Tools;
 using Discord;
@@ -28,8 +26,6 @@ public class Adramelech
 
         Log.Logger = Loggers.Default;
 
-        DatabaseManager.Connect();
-
         var services = ConfigureServices();
 
         _client = services.GetRequiredService<DiscordSocketClient>();
@@ -38,9 +34,9 @@ public class Adramelech
         _client.Log += LogAsync;
         _interactionService.Log += LogAsync;
 
-        await _client.SetActivityAsync(BotConfig.Activity);
+        await _client.SetActivityAsync(ConfigService.Activity);
 
-        await _client.LoginAsync(TokenType.Bot, BotConfig.Instance.Token);
+        await _client.LoginAsync(TokenType.Bot, services.GetRequiredService<ConfigService>().Token);
         await _client.StartAsync();
 
         await _interactionService.AddModulesAsync(Assembly.GetEntryAssembly(), services);
@@ -48,20 +44,24 @@ public class Adramelech
         services.GetRequiredService<InteractionHandler>().Initialize();
         services.GetRequiredService<CommandHandler>().Initialize();
         services.GetRequiredService<ReadyHandler>().Initialize();
-        // services.GetRequiredService<HttpServer>().Initialize();
-        await services.GetRequiredService<TcpServer>().InitializeAsync();
+        services.GetRequiredService<HttpWrapper>().Initialize();
 
         await Task.Delay(-1);
     }
 
     private static ServiceProvider ConfigureServices() => new ServiceCollection()
+        // Discord
         .AddSingleton<DiscordSocketClient>()
-        .AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>()))
+        .AddSingleton<InteractionService>()
+        // Configuration
+        .AddSingleton<DatabaseService>()
+        .AddSingleton<ConfigService>()
+        // Handlers
         .AddSingleton<InteractionHandler>()
         .AddSingleton<CommandHandler>()
         .AddSingleton<ReadyHandler>()
-        // .AddSingleton<HttpServer>()
-        .AddSingleton<TcpServer>()
+        // Tools
+        .AddSingleton<HttpWrapper>()
         .BuildServiceProvider();
 
     private static async Task LogAsync(LogMessage msg)

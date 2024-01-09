@@ -1,6 +1,6 @@
-﻿using Adramelech.Configuration;
-using Adramelech.Data;
+﻿using Adramelech.Data;
 using Adramelech.Extensions;
+using Adramelech.Services;
 using Adramelech.Tools;
 using Adramelech.Utilities;
 using Discord;
@@ -87,7 +87,7 @@ public class PortScan : InteractionModuleBase<SocketInteractionContext<SocketSla
             }
 
             await Context.User.SendMessageAsync(embed: new EmbedBuilder()
-                .WithColor(BotConfig.EmbedColor)
+                .WithColor(ConfigService.EmbedColor)
                 .WithTitle($"Port scan on `{host}` complete")
                 .WithDescription("The port scan that you requested is complete, you can see the results below.\n" +
                                  "Be aware that some ports may be closed but still show up as open.\n" +

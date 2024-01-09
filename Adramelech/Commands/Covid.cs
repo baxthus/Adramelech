@@ -1,5 +1,5 @@
-﻿using Adramelech.Configuration;
-using Adramelech.Extensions;
+﻿using Adramelech.Extensions;
+using Adramelech.Services;
 using Adramelech.Utilities;
 using Discord;
 using Discord.Interactions;
@@ -36,7 +36,7 @@ public class Covid : InteractionModuleBase<SocketInteractionContext<SocketSlashC
         var local = country.ToLower() == "worldwide" ? country.ToLower() : response.Country;
 
         await FollowupAsync(embed: new EmbedBuilder()
-            .WithColor(BotConfig.EmbedColor)
+            .WithColor(ConfigService.EmbedColor)
             .WithTitle($"__Covid Stats for {local}__")
             .WithDescription($"**Cases:** `{response.Cases}`\n" +
                              $"**Today Cases:** `{response.TodayCases}`\n" +

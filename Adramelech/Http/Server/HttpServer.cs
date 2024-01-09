@@ -1,5 +1,5 @@
 ﻿using System.Net;
-using Adramelech.Http.Extensions;
+using Adramelech.Http.Utilities;
 using Adramelech.Utilities;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -8,34 +8,24 @@ namespace Adramelech.Http.Server;
 
 public class HttpServer
 {
-    private readonly List<EndpointBase> _endpoints = [];
+    private readonly List<ControllerBase> _controllers = [];
     private readonly List<MiddlewareBase> _middlewares = [];
     private readonly List<KeyValuePair<Type, object>> _dependencies = [];
 
-    /// <summary>
-    /// Adds all endpoints that inherit from <see cref="EndpointBase" /> to the server
-    /// </summary>
-    public void AddEndpoints()
+    public void AddControllers()
     {
-        var endpoints = ExceptionUtils.Try(() => ReflectionUtils.GetInstances<EndpointBase>());
+        var endpoints = ExceptionUtils.Try(() => ReflectionUtils.GetInstances<ControllerBase>());
         if (endpoints.IsFailure)
         {
-            Log.Error(endpoints.Exception, "Failed to get endpoints");
+            Log.Error(endpoints.Exception, "Failed to get controllers");
             return;
         }
 
-        _endpoints.AddRange(endpoints.Value!);
+        _controllers.AddRange(endpoints.Value!);
     }
 
-    /// <summary>
-    /// Adds an endpoint to the server
-    /// </summary>
-    /// <param name="endpoint">The endpoint to add</param>
-    public void AddEndpoint(EndpointBase endpoint) => _endpoints.Add(endpoint);
+    public void AddController(ControllerBase controller) => _controllers.Add(controller);
 
-    /// <summary>
-    /// Adds all middlewares that inherit from <see cref="MiddlewareBase" /> to the server
-    /// </summary>
     public void AddMiddlewares()
     {
         var middlewares = ExceptionUtils.Try(() => ReflectionUtils.GetInstances<MiddlewareBase>());
@@ -48,28 +38,11 @@ public class HttpServer
         _middlewares.AddRange(middlewares.Value!);
     }
 
-    /// <summary>
-    /// Adds a middleware to the server
-    /// </summary>
-    /// <param name="middleware">The middleware to add</param>
     public void AddMiddleware(MiddlewareBase middleware) => _middlewares.Add(middleware);
 
-    /// <summary>
-    /// Adds a dependency to the server
-    /// </summary>
-    /// <param name="dependency">The dependency to add</param>
-    /// <typeparam name="T">The type of the dependency</typeparam>
     public void AddDependency<T>(T dependency) =>
         _dependencies.Add(new KeyValuePair<Type, object>(typeof(T), dependency!));
 
-    /// <summary>
-    /// Starts the server
-    /// </summary>
-    /// <param name="port">The port to listen on</param>
-    /// <param name="accepts">
-    /// Higher values mean more connections can be maintained yet at a much slower average response time; fewer connections will be rejected.
-    /// Lower values mean fewer connections can be maintained yet at a much faster average response time; more connections will be rejected.
-    /// </param>
     public void Serve(int port, int accepts = 4)
     {
         accepts *= Environment.ProcessorCount;
@@ -80,11 +53,11 @@ public class HttpServer
         var result = ExceptionUtils.Try(listener.Start);
         if (result.IsFailure)
         {
-            Log.Error(result.Exception, "Failed to start HttpListener");
+            Log.Error(result.Exception, "Failed to start listener");
             return;
         }
 
-        Log.Information("Server listening at {Prefixes}", listener.Prefixes);
+        Log.Information("Listening on port {Port}", port);
 
         var sem = new Semaphore(accepts, accepts);
 
@@ -92,7 +65,6 @@ public class HttpServer
         {
             sem.WaitOne();
 
-#pragma warning disable CS4014
             listener.GetContextAsync().ContinueWith(async task =>
             {
                 sem.Release();
@@ -100,7 +72,6 @@ public class HttpServer
                 var context = await task;
                 await ListenerCallbackAsync(context);
             });
-#pragma warning restore CS4014
         }
 
         listener.Stop();
@@ -110,9 +81,9 @@ public class HttpServer
     {
         var request = context.Request;
 
-        // Endpoints
-        var endpoint = _endpoints.FirstOrDefault(e => e.Path == request.Url!.AbsolutePath);
-        if (endpoint is null)
+        // Controllers
+        var controller = _controllers.FirstOrDefault(c => c.Paths.Contains(request.Url!.AbsolutePath));
+        if (controller is null)
         {
             await context.RespondAsync("Not found", HttpStatusCode.NotFound);
             return;
@@ -121,18 +92,22 @@ public class HttpServer
         // Middlewares
         foreach (var middleware in _middlewares)
         {
-            var result = await middleware.HandleRequestAsync(context, request, endpoint);
-            // If the middleware returns false, the response has already been sent
+            if (middleware.Path is not null)
+                if (!middleware.Path.IsMatch(request.Url!.AbsolutePath))
+                    continue;
+
+            var result = await middleware.HandleRequestAsync(context, request, controller);
             if (!result)
                 return;
         }
 
         // Dependencies
         var services = new ServiceCollection();
-        _dependencies.ForEach(obj => services.AddSingleton(obj.Key, obj.Value));
+        _dependencies.ForEach(d => services.AddSingleton(d.Key, d.Value));
         var provider = services.BuildServiceProvider();
 
-        var handle = await ExceptionUtils.TryAsync(() => endpoint.HandleRequestAsync(context, request, provider));
+        var handle = await ExceptionUtils.TryAsync(() =>
+            controller.HandleRequestAsync(context, request, provider, request.Url!.AbsolutePath));
         if (handle.IsFailure)
         {
             Log.Error(handle.Exception, "Failed to handle request");

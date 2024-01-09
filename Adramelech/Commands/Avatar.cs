@@ -1,4 +1,4 @@
-﻿using Adramelech.Configuration;
+﻿using Adramelech.Services;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -14,7 +14,7 @@ public class Avatar : InteractionModuleBase<SocketInteractionContext<SocketSlash
 
         await RespondAsync(
             embed: new EmbedBuilder()
-                .WithColor(BotConfig.EmbedColor)
+                .WithColor(ConfigService.EmbedColor)
                 .WithTitle($"Avatar of {user.Username}")
                 .WithImageUrl(user.GetAvatarUrl(size: 2048))
                 .Build(),

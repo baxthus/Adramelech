@@ -1,5 +1,5 @@
-﻿using Adramelech.Configuration;
-using Adramelech.Extensions;
+﻿using Adramelech.Extensions;
+using Adramelech.Services;
 using Adramelech.Utilities;
 using Discord;
 using Discord.Interactions;
@@ -30,7 +30,7 @@ public class Obfuscate : InteractionModuleBase<SocketInteractionContext<SocketSl
                 Generator = "sketchy",
                 Metadata = metadata ? "IGNORE" : "PROXY"
             },
-            userAgent: OtherConfig.UserAgent,
+            userAgent: ConfigService.UserAgent,
             dataNamingStrategy: new CamelCaseNamingStrategy());
         if (response.IsDefault())
         {
@@ -42,7 +42,7 @@ public class Obfuscate : InteractionModuleBase<SocketInteractionContext<SocketSl
         var removedMetadata = response.Metadata == "IGNORE" ? "Yes" : "No";
 
         await FollowupAsync(embed: new EmbedBuilder()
-            .WithColor(BotConfig.EmbedColor)
+            .WithColor(ConfigService.EmbedColor)
             .WithTitle("__Obfuscated URL__")
             .AddField(":outbox_tray: **Destination**", $"```{response.Destination}```")
             .AddField(":inbox_tray: **Result**", $"```{response.Id}```")

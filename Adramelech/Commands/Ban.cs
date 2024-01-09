@@ -1,5 +1,5 @@
-﻿using Adramelech.Configuration;
-using Adramelech.Extensions;
+﻿using Adramelech.Extensions;
+using Adramelech.Services;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -33,7 +33,7 @@ public class Ban : InteractionModuleBase<SocketInteractionContext<SocketSlashCom
         await member.BanAsync(pruneDays, reason);
 
         await RespondAsync(embed: new EmbedBuilder()
-            .WithColor(BotConfig.EmbedColor)
+            .WithColor(ConfigService.EmbedColor)
             .WithTitle("__Member Banned__")
             .WithDescription($"User {member.Username} has been banned")
             .AddField("Reason", $"`{reason}`")

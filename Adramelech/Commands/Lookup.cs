@@ -1,6 +1,6 @@
 ﻿using System.Text.RegularExpressions;
-using Adramelech.Configuration;
 using Adramelech.Extensions;
+using Adramelech.Services;
 using Adramelech.Utilities;
 using Discord;
 using Discord.Interactions;
@@ -59,7 +59,7 @@ public class Lookup : InteractionModuleBase<SocketInteractionContext<SocketSlash
 
         await FollowupAsync(
             embed: new EmbedBuilder()
-                .WithColor(BotConfig.EmbedColor)
+                .WithColor(ConfigService.EmbedColor)
                 .WithDescription("For the best results, search by IP")
                 .AddField(":zap: **Main**", mainField)
                 .AddField(":earth_americas: **Location**", locationField)

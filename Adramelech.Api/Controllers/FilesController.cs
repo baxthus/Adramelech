@@ -1,19 +1,14 @@
-﻿using Adramelech.Api.Services;
-using Adramelech.Server.Types;
-using Microsoft.AspNetCore.Mvc;
-using Serilog;
+﻿using Microsoft.AspNetCore.Mvc;
 
 namespace Adramelech.Api.Controllers;
 
 [ApiController]
 [Route("[controller]/[action]")]
-public class FilesController(TcpService tcpService) : ControllerBase
+public class FilesController : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> List()
     {
-        Console.WriteLine("Listing files");
-        var files = await tcpService.SendCommandAsync(new Request("files-list", null));
-        return files.IsFailure ? StatusCode(500, files.Exception?.Message ?? "Unknown error") : Ok(files.Value);
+        return Ok();
     }
 }

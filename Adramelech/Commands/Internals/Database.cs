@@ -1,7 +1,7 @@
 ﻿using System.Text;
-using Adramelech.Configuration;
 using Adramelech.Database;
 using Adramelech.Extensions;
+using Adramelech.Services;
 using Adramelech.Utilities;
 using Discord;
 using Discord.Interactions;
@@ -16,7 +16,8 @@ namespace Adramelech.Commands.Internals;
 public class Database : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
 {
     [Group("config", "Configuration database commands")]
-    public class Config : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
+    public class Config(ConfigService configService, DatabaseService dbService)
+        : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
     {
         [SlashCommand("regen-api-token", "Regenerate the API token")]
         public async Task RegenApiTokenAsync()
@@ -28,40 +29,35 @@ public class Database : InteractionModuleBase<SocketInteractionContext<SocketSla
             var key = EncryptUtils.DeriveKey(apiToken);
             var hash = await EncryptUtils.Encrypt(apiToken, key);
 
-            try
+            var updateToken = await dbService.UpdateConfigAsync(new ConfigSchema
             {
-                await DatabaseManager.Config.DeleteOneAsync(x => x.Key == "ApiToken");
-                await DatabaseManager.Config.DeleteOneAsync(x => x.Key == "ApiTokenKey");
+                Key = "ApiToken",
+                Value = hash
+            });
+            var updateTokenKey = await dbService.UpdateConfigAsync(new ConfigSchema
+            {
+                Key = "ApiTokenKey",
+                Value = key
+            });
 
-                await DatabaseManager.Config.InsertOneAsync(new ConfigSchema
-                {
-                    Id = ObjectId.GenerateNewId(),
-                    Key = "ApiToken",
-                    Value = hash
-                });
-                await DatabaseManager.Config.InsertOneAsync(new ConfigSchema
-                {
-                    Id = ObjectId.GenerateNewId(),
-                    Key = "ApiTokenKey",
-                    Value = key
-                });
-            }
-            catch
+            if (updateToken.IsFailure || updateTokenKey.IsFailure ||
+                updateToken.Value?.ModifiedCount == 0 || updateTokenKey.Value?.ModifiedCount == 0)
             {
                 await Context.SendError("Failed to regenerate API token.", true);
                 return;
             }
 
-            HttpConfig.Refresh();
+
+            await configService.ReloadAsync();
 
             var button = new ComponentBuilder()
                 .WithButton("Setup cookie", style: ButtonStyle.Link,
-                    url: $"{HttpConfig.Instance.BaseUrl}/auth/setup-cookie?token={apiToken}")
+                    url: $"{configService.BaseUrl}/auth/setup-cookie?token={apiToken}")
                 .Build();
 
             await FollowupAsync(
                 embed: new EmbedBuilder()
-                    .WithColor(BotConfig.EmbedColor)
+                    .WithColor(ConfigService.EmbedColor)
                     .WithTitle("API token regenerated")
                     .WithDescription($"**New API token:** `{apiToken}`")
                     .Build(),
@@ -78,7 +74,7 @@ public class Database : InteractionModuleBase<SocketInteractionContext<SocketSla
 
             if (channel is null)
             {
-                var channelId = HttpConfig.Instance.FilesChannel;
+                var channelId = configService.FilesChannel;
                 if (!channelId.HasValue)
                 {
                     await Context.SendError("Files channel not set.", true);
@@ -89,7 +85,7 @@ public class Database : InteractionModuleBase<SocketInteractionContext<SocketSla
 
                 await FollowupAsync(
                     embed: new EmbedBuilder()
-                        .WithColor(BotConfig.EmbedColor)
+                        .WithColor(ConfigService.EmbedColor)
                         .WithTitle("Files channel")
                         .WithDescription($"**ID:** `{filesChannel.Id}`\n" +
                                          $"**Name:** {filesChannel.Name}\n" +
@@ -99,34 +95,44 @@ public class Database : InteractionModuleBase<SocketInteractionContext<SocketSla
                 return;
             }
 
-            var filter = Builders<ConfigSchema>.Filter.Eq(x => x.Key, "FilesChannelId");
-
-            try
+            var exist = await dbService.ConfigExistsAsync("FilesChannelId");
+            if (exist.IsFailure)
             {
-                var exist = await DatabaseManager.Config.Find(filter).AnyAsync();
+                await Context.SendError("Failed to get files channel.", true);
+                return;
+            }
 
-                if (exist)
-                    await DatabaseManager.Config.UpdateOneAsync(filter,
-                        Builders<ConfigSchema>.Update.Set(x => x.Value, channel.Id.ToString()));
-                else
-                    await DatabaseManager.Config.InsertOneAsync(new ConfigSchema
+            if (exist.Value)
+            {
+                if (await dbService.UpdateConfigAsync(new ConfigSchema
+                    {
+                        Key = "FilesChannelId",
+                        Value = channel.Id.ToString()
+                    }) is { IsFailure: true, Value.ModifiedCount: 0 })
+                {
+                    await Context.SendError("Failed to update files channel.", true);
+                    return;
+                }
+            }
+            else
+            {
+                if (await dbService.InsertConfigAsync(new ConfigSchema
                     {
                         Id = ObjectId.GenerateNewId(),
                         Key = "FilesChannelId",
                         Value = channel.Id.ToString()
-                    });
-            }
-            catch
-            {
-                await Context.SendError("Failed to set files channel.", true);
-                return;
+                    }) is { IsFailure: true })
+                {
+                    await Context.SendError("Failed to set files channel.", true);
+                    return;
+                }
             }
 
-            HttpConfig.Refresh();
+            await configService.ReloadAsync();
 
             await FollowupAsync(
                 embed: new EmbedBuilder()
-                    .WithColor(BotConfig.EmbedColor)
+                    .WithColor(ConfigService.EmbedColor)
                     .WithTitle("Files channel set")
                     .WithDescription($"**ID:** `{channel.Id}`\n" +
                                      $"**Name:** {channel.Name}")
@@ -136,7 +142,7 @@ public class Database : InteractionModuleBase<SocketInteractionContext<SocketSla
     }
 
     [Group("music", "Music database commands")]
-    public class Music : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
+    public class Music(DatabaseService dbService) : InteractionModuleBase<SocketInteractionContext<SocketSlashCommand>>
     {
         [SlashCommand("add", "Add a song to the database")]
         public async Task AddAsync([Summary("title", "The title of the song")] string title,
@@ -151,19 +157,17 @@ public class Database : InteractionModuleBase<SocketInteractionContext<SocketSla
         {
             await DeferAsync(true);
 
-            try
+            var result = await ExceptionUtils.TryAsync(() => dbService.Music.InsertOneAsync(new MusicSchema
             {
-                await DatabaseManager.Music.InsertOneAsync(new MusicSchema
-                {
-                    Id = ObjectId.GenerateNewId(),
-                    Title = title,
-                    Album = album,
-                    Artist = artist,
-                    Url = url,
-                    Favorite = favorite
-                });
-            }
-            catch
+                Id = ObjectId.GenerateNewId(),
+                Title = title,
+                Album = album,
+                Artist = artist,
+                Url = url,
+                Favorite = favorite
+            }));
+
+            if (result.IsFailure)
             {
                 await Context.SendError("Failed to add song to database.", true);
                 return;
@@ -171,7 +175,7 @@ public class Database : InteractionModuleBase<SocketInteractionContext<SocketSla
 
             await FollowupAsync(
                 embed: new EmbedBuilder()
-                    .WithColor(BotConfig.EmbedColor)
+                    .WithColor(ConfigService.EmbedColor)
                     .WithTitle("Song added to database")
                     .WithDescription($"**Title:** {title}\n" +
                                      $"**Album:** {album}\n" +
@@ -197,18 +201,16 @@ public class Database : InteractionModuleBase<SocketInteractionContext<SocketSla
         {
             await DeferAsync(true);
 
-            List<MusicSchema> songs;
-            try
-            {
-                songs = await DatabaseManager.Music.Find(_ => true).ToListAsync();
-            }
-            catch
+            var result = await ExceptionUtils.TryAsync(() => dbService.Music.Find(_ => true).ToListAsync());
+            if (result.IsFailure)
             {
                 await Context.SendError("Failed to get songs from database.", true);
                 return;
             }
 
-            if (songs.Count == 0)
+            var songs = result.Value;
+
+            if (songs?.Count == 0)
             {
                 await Context.SendError("No songs found in database.", true);
                 return;
@@ -216,7 +218,7 @@ public class Database : InteractionModuleBase<SocketInteractionContext<SocketSla
 
             StringBuilder sb = new();
 
-            songs.ForEach(x =>
+            songs?.ForEach(x =>
                 sb.AppendLine($"ID: {x.Id}\n" +
                               $"Title: {x.Title}\n" +
                               $"Album: {x.Album}\n" +
@@ -226,7 +228,7 @@ public class Database : InteractionModuleBase<SocketInteractionContext<SocketSla
 
             await FollowupWithFileAsync(
                 embed: new EmbedBuilder()
-                    .WithColor(BotConfig.EmbedColor)
+                    .WithColor(ConfigService.EmbedColor)
                     .WithTitle("Songs in database")
                     .Build(),
                 ephemeral: true,
@@ -236,7 +238,8 @@ public class Database : InteractionModuleBase<SocketInteractionContext<SocketSla
     }
 }
 
-public class DatabaseComponents : InteractionModuleBase<SocketInteractionContext<SocketMessageComponent>>
+public class DatabaseComponents(DatabaseService dbService)
+    : InteractionModuleBase<SocketInteractionContext<SocketMessageComponent>>
 {
     [ComponentInteraction("removeSongYes")]
     public async Task RemoveSongYesAsync()
@@ -244,19 +247,15 @@ public class DatabaseComponents : InteractionModuleBase<SocketInteractionContext
         // Parse the song id between the backticks
         var id = Context.Interaction.Message.Content.Split('`')[1];
 
-        bool deleted;
-        try
-        {
-            var result = await DatabaseManager.Music.DeleteOneAsync(x => x.Id == ObjectId.Parse(id));
-            deleted = result.DeletedCount > 0;
-        }
-        catch
+        var deleted =
+            await ExceptionUtils.TryAsync(() => dbService.Music.DeleteOneAsync(x => x.Id == ObjectId.Parse(id)));
+        if (deleted.IsFailure)
         {
             await Context.SendError("Failed to remove song from database.");
             return;
         }
 
-        if (!deleted)
+        if (deleted.Value?.DeletedCount == 0)
         {
             await Context.SendError("Song not found in database.");
             return;
@@ -265,7 +264,7 @@ public class DatabaseComponents : InteractionModuleBase<SocketInteractionContext
         await Context.Interaction.UpdateAsync(p =>
         {
             p.Embed = new EmbedBuilder()
-                .WithColor(BotConfig.EmbedColor)
+                .WithColor(ConfigService.EmbedColor)
                 .WithTitle("Song removed from database")
                 .Build();
             // Remove the buttons and content

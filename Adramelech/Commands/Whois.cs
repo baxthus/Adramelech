@@ -1,6 +1,6 @@
 ﻿using System.Text;
-using Adramelech.Configuration;
 using Adramelech.Extensions;
+using Adramelech.Services;
 using Adramelech.Utilities;
 using Discord;
 using Discord.Interactions;
@@ -24,7 +24,7 @@ public class Whois : InteractionModuleBase<SocketInteractionContext<SocketSlashC
 
         await FollowupWithFileAsync(
             embed: new EmbedBuilder()
-                .WithColor(BotConfig.EmbedColor)
+                .WithColor(ConfigService.EmbedColor)
                 .WithTitle("__Whois__")
                 .AddField(":link: Target", $"```{target}```")
                 .WithFooter("Powered by da.gd")

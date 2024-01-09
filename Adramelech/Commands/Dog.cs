@@ -1,5 +1,5 @@
-﻿using Adramelech.Configuration;
-using Adramelech.Extensions;
+﻿using Adramelech.Extensions;
+using Adramelech.Services;
 using Adramelech.Utilities;
 using Discord;
 using Discord.Interactions;
@@ -22,7 +22,7 @@ public class Dog : InteractionModuleBase<SocketInteractionContext<SocketSlashCom
         }
 
         await FollowupAsync(embed: new EmbedBuilder()
-            .WithColor(BotConfig.EmbedColor)
+            .WithColor(ConfigService.EmbedColor)
             .WithImageUrl(response.Message)
             .WithFooter("Powered by dog.ceo")
             .Build());

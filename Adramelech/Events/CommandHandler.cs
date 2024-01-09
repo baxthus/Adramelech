@@ -2,15 +2,11 @@
 using Discord.Interactions;
 using Serilog;
 
-namespace Adramelech.Services;
+namespace Adramelech.Events;
 
-public class CommandHandler
+public class CommandHandler(InteractionService interactionService)
 {
-    private readonly InteractionService _interactionService;
-
-    public CommandHandler(InteractionService interactionService) => _interactionService = interactionService;
-
-    public void Initialize() => _interactionService.SlashCommandExecuted += SlashCommandExecuted;
+    public void Initialize() => interactionService.SlashCommandExecuted += SlashCommandExecuted;
 
     private static Task SlashCommandExecuted(SlashCommandInfo commandInfo, IInteractionContext interaction,
         IResult result)

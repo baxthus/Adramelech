@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using Adramelech.Configuration;
 using Adramelech.Extensions;
+using Adramelech.Services;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -34,7 +34,7 @@ public class Clear : InteractionModuleBase<SocketInteractionContext<SocketSlashC
         }
 
         await RespondAsync(embed: new EmbedBuilder()
-            .WithColor(BotConfig.EmbedColor)
+            .WithColor(ConfigService.EmbedColor)
             .WithTitle("__Clear__")
             .WithDescription($"Successfully deleted {messages.Count()} messages\n" +
                              $"Command executed by {Context.User.Mention}")

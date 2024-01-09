@@ -1,5 +1,6 @@
 ﻿using System.Net;
-using Adramelech.Http.Extensions;
+using System.Text.RegularExpressions;
+using Adramelech.Http.Utilities;
 using Adramelech.Utilities;
 using Serilog;
 
@@ -9,23 +10,25 @@ public abstract class MiddlewareBase
 {
     protected HttpListenerContext Context = null!;
     protected HttpListenerRequest Request = null!;
-    protected EndpointBase Endpoint = null!;
+    protected ControllerBase Controller = null!;
+
+    public virtual Regex? Path => null;
 
     public async Task<bool> HandleRequestAsync(HttpListenerContext context, HttpListenerRequest request,
-        EndpointBase endpoint)
+        ControllerBase controller)
     {
         Context = context;
         Request = request;
-        Endpoint = endpoint;
+        Controller = controller;
 
-        var result = await ExceptionUtils.TryAsync(HandleRequestAsync);
+        var result = await ExceptionUtils.TryAsync(HandleAsync);
 
         if (!result.IsFailure) return result.Value;
 
         Log.Error(result.Exception, "Failed to handle request");
-        await context.RespondAsync("Failed to handle request", HttpStatusCode.InternalServerError);
+        await Context.RespondAsync("Failed to handle request", HttpStatusCode.InternalServerError);
         return false;
     }
 
-    protected abstract Task<bool> HandleRequestAsync();
+    protected abstract Task<bool> HandleAsync();
 }

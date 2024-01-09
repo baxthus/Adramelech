@@ -1,5 +1,5 @@
-﻿using Adramelech.Configuration;
-using Adramelech.Extensions;
+﻿using Adramelech.Extensions;
+using Adramelech.Services;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -26,7 +26,7 @@ public class SendDm : InteractionModuleBase<SocketInteractionContext<SocketSlash
 
         await RespondAsync(
             embed: new EmbedBuilder()
-                .WithColor(BotConfig.EmbedColor)
+                .WithColor(ConfigService.EmbedColor)
                 .WithTitle("__DM Sent__")
                 .WithDescription("Message sent successfully")
                 .Build(),
