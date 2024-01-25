@@ -2,6 +2,7 @@
 using System.Net;
 using System.Reflection;
 using Adramelech.Http.Attributes;
+using Adramelech.Http.Attributes.Http;
 using Adramelech.Http.Utilities;
 using Adramelech.Utilities;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,13 +36,17 @@ public class ControllerBase
             !methods.Any())
             throw new InvalidOperationException("No methods found");
 
+        if (methods.Any(m => m.Key is null))
+            throw new InvalidOperationException("HttpMethodAttribute missing from method");
+
         _routes = methods.Select(m => new RouteData(
-            m.Key.Path is null ? basePath : $"{basePath}/{m.Key.Path}",
-            m.Key.Path,
+            m.Key!.Path is null ? basePath : $"{basePath}/{m.Key.Path}",
             m.Key.Method,
             m.Value
         )).ToList();
     }
+
+    protected virtual Task InitializeAsync() => Task.CompletedTask;
 
     public async Task HandleRequestAsync(HttpListenerContext context, HttpListenerRequest request,
         ServiceProvider provider, string path)
@@ -61,7 +66,10 @@ public class ControllerBase
 
         if (!await ExecuteChecksAsync()) return;
 
-        var handle = await ExceptionUtils.TryAsync(() => (Task)CurrentRoute.MethodInfo.Invoke(this, null)!);
+        // Run the initialize method
+        await InitializeAsync();
+
+        var handle = await ErrorUtils.TryAsync(() => (Task)CurrentRoute.MethodInfo.Invoke(this, null)!);
         if (handle.IsFailure)
         {
             Log.Error(handle.Exception, "Failed to execute handle");
@@ -77,5 +85,26 @@ public class ControllerBase
         return false;
     }
 
-    protected record RouteData(string FullPath, string? OriginalPath, string Method, MethodInfo MethodInfo);
+    protected record RouteData(string FullPath, string Method, MethodInfo MethodInfo);
+
+    protected byte[] GetBody()
+    {
+        using BinaryReader r = new(Request.InputStream);
+        var buffer = r.ReadBytes(Convert.ToInt32(Request.ContentLength64));
+
+        return buffer.Length > 0 ? buffer : throw new Exception("No body found");
+    }
+
+    protected async Task RespondAsync(bool success, object? data, HttpStatusCode statusCode = HttpStatusCode.OK) =>
+        await Context.RespondAsync(new ResponseModel(true, Data: data).ToJson(), statusCode, "application/json");
+
+    protected async Task RespondAsync(bool success, string? message, HttpStatusCode statusCode = HttpStatusCode.OK) =>
+        await Context.RespondAsync(new ResponseModel(success, message).ToJson(), statusCode, "application/json");
+
+    protected async Task RespondAsync(ReadOnlyMemory<byte> buffer,
+        HttpStatusCode statusCode = HttpStatusCode.OK, string contentType = "text/plain") =>
+        await Context.RespondAsync(buffer, statusCode, contentType);
+
+    [SuppressMessage("ReSharper", "NotAccessedPositionalProperty.Local")]
+    private record ResponseModel(bool Success, string? Message = null, object? Data = null);
 }

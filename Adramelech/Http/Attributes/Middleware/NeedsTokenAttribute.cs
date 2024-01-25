@@ -1,4 +1,14 @@
 ﻿namespace Adramelech.Http.Attributes.Middleware;
 
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
-public class NeedsToken
+[AttributeUsage(AttributeTargets.Class)]
+public class NeedsTokenAttribute(TokenSources priority = TokenSources.QueryString) : Attribute
+{
+    public readonly TokenSources Priority = priority;
+}
+
+public enum TokenSources
+{
+    Cookie,
+    Header,
+    QueryString
+}

@@ -1,10 +1,13 @@
-﻿using MongoDB.Bson;
+﻿using System.Diagnostics.CodeAnalysis;
+using Postgrest.Attributes;
+using Postgrest.Models;
 
 namespace Adramelech.Models;
 
-public struct ConfigModel
+[Table("config")]
+[SuppressMessage("ReSharper", "ExplicitCallerInfoArgument")]
+public class ConfigModel : BaseModel
 {
-    public ObjectId Id { get; set; }
-    public string Key { get; set; }
-    public string Value { get; set; }
+    [PrimaryKey("key")] public string Key { get; init; } = null!;
+    [Column("value")] public string Value { get; init; } = null!;
 }

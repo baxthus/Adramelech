@@ -17,7 +17,11 @@ public static class Loggers
     };
 
     public static readonly Logger Default = new LoggerConfiguration()
+#if DEBUG
         .MinimumLevel.Debug()
+#else
+        .MinimumLevel.Information()
+#endif
         .Enrich.FromLogContext()
         .WriteTo.Console()
 // Don't send to Sentry in debug mode

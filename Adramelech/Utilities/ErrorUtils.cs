@@ -5,7 +5,7 @@ namespace Adramelech.Utilities;
 /// <summary>
 /// Utilities for handling exceptions
 /// </summary>
-public static class ExceptionUtils
+public static class ErrorUtils
 {
     /// <summary>
     /// Invoke a function and return the result or the exception thrown

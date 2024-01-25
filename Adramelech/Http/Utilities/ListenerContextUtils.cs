@@ -17,7 +17,7 @@ public static class ListenerContextUtils
 
         await Task.Run(async () =>
         {
-            await ExceptionUtils.TryAndFinallyAsync(
+            await ErrorUtils.TryAndFinallyAsync(
                 async () => await response.OutputStream.WriteAsync(buffer),
                 response.Close);
         });

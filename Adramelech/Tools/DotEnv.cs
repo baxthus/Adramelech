@@ -1,10 +1,13 @@
-﻿namespace Adramelech.Tools;
+﻿using Serilog;
+
+namespace Adramelech.Tools;
 
 public static class DotEnv
 {
     public static void Load(string? filePath = null)
     {
         filePath ??= Path.Combine(Directory.GetCurrentDirectory(), ".env");
+        Log.Debug("Loading .env file from {FilePath}", filePath);
 
         if (!File.Exists(filePath))
             return;

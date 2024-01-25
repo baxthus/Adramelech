@@ -1,4 +1,4 @@
-﻿namespace Adramelech.Http.Attributes;
+﻿namespace Adramelech.Http.Attributes.Http;
 
 public class HttpPostAttribute(string? path = null) : HttpMethodAttribute(path)
 {

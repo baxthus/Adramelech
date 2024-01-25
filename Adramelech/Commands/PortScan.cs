@@ -73,7 +73,7 @@ public class PortScan : InteractionModuleBase<SocketInteractionContext<SocketSla
             var cts = new CancellationTokenSource(TimeSpan.FromMinutes(15));
 
             var result =
-                await ExceptionUtils.TryAsync(() => new PortScanner(host, ports, Context.User, cts.Token).ScanAsync());
+                await ErrorUtils.TryAsync(() => new PortScanner(host, ports, Context.User, cts.Token).ScanAsync());
             if (result.IsFailure)
             {
                 await Context.SendError(result.Exception!.Message, toDm: true);

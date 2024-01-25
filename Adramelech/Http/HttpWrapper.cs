@@ -4,7 +4,7 @@ using Discord.WebSocket;
 
 namespace Adramelech.Http;
 
-public class HttpWrapper(DiscordSocketClient botClient, ConfigService configService)
+public class HttpWrapper(DatabaseService dbService, ConfigService configService, DiscordSocketClient botClient)
 {
     public void Initialize()
     {
@@ -13,8 +13,10 @@ public class HttpWrapper(DiscordSocketClient botClient, ConfigService configServ
         server.AddControllers();
         server.AddMiddlewares();
 
+        server.AddDependency(dbService);
+        server.AddDependency(configService);
         server.AddDependency(botClient);
 
-        server.Serve(configService.BridgePort);
+        server.Serve(configService.Port);
     }
 }

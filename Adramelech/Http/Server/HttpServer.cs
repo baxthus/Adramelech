@@ -10,11 +10,11 @@ public class HttpServer
 {
     private readonly List<ControllerBase> _controllers = [];
     private readonly List<MiddlewareBase> _middlewares = [];
-    private readonly List<KeyValuePair<Type, object>> _dependencies = [];
+    private readonly ServiceCollection _dependencies = [];
 
     public void AddControllers()
     {
-        var endpoints = ExceptionUtils.Try(() => ReflectionUtils.GetInstances<ControllerBase>());
+        var endpoints = ErrorUtils.Try(() => ReflectionUtils.GetInstances<ControllerBase>());
         if (endpoints.IsFailure)
         {
             Log.Error(endpoints.Exception, "Failed to get controllers");
@@ -28,7 +28,7 @@ public class HttpServer
 
     public void AddMiddlewares()
     {
-        var middlewares = ExceptionUtils.Try(() => ReflectionUtils.GetInstances<MiddlewareBase>());
+        var middlewares = ErrorUtils.Try(() => ReflectionUtils.GetInstances<MiddlewareBase>());
         if (middlewares.IsFailure)
         {
             Log.Error(middlewares.Exception, "Failed to get middlewares");
@@ -41,7 +41,7 @@ public class HttpServer
     public void AddMiddleware(MiddlewareBase middleware) => _middlewares.Add(middleware);
 
     public void AddDependency<T>(T dependency) =>
-        _dependencies.Add(new KeyValuePair<Type, object>(typeof(T), dependency!));
+        _dependencies.AddSingleton(typeof(T), dependency!);
 
     public void Serve(int port, int accepts = 4)
     {
@@ -50,9 +50,13 @@ public class HttpServer
         var listener = new HttpListener();
         listener.Prefixes.Add($"http://+:{port}/");
 
-        var result = ExceptionUtils.Try(listener.Start);
+        var result = ErrorUtils.Try(listener.Start);
         if (result.IsFailure)
         {
+            // If you get an error here, run the following command as administrator:
+            // "netsh http add urlacl url=http://+:{0}/ user={1}"
+            // Replace {0} with port and {1} with the equivalent of "everyone" in your language
+            // For example, in English it's "everyone", in Portuguese and Spanish it's "todos"
             Log.Error(result.Exception, "Failed to start listener");
             return;
         }
@@ -89,6 +93,9 @@ public class HttpServer
             return;
         }
 
+        // Dependencies
+        var provider = _dependencies.BuildServiceProvider();
+
         // Middlewares
         foreach (var middleware in _middlewares)
         {
@@ -96,17 +103,12 @@ public class HttpServer
                 if (!middleware.Path.IsMatch(request.Url!.AbsolutePath))
                     continue;
 
-            var result = await middleware.HandleRequestAsync(context, request, controller);
+            var result = await middleware.HandleRequestAsync(context, request, controller, provider);
             if (!result)
                 return;
         }
 
-        // Dependencies
-        var services = new ServiceCollection();
-        _dependencies.ForEach(d => services.AddSingleton(d.Key, d.Value));
-        var provider = services.BuildServiceProvider();
-
-        var handle = await ExceptionUtils.TryAsync(() =>
+        var handle = await ErrorUtils.TryAsync(() =>
             controller.HandleRequestAsync(context, request, provider, request.Url!.AbsolutePath));
         if (handle.IsFailure)
         {

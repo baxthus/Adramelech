@@ -1,138 +1,85 @@
 ﻿using Adramelech.Common;
-using Adramelech.Database;
-using MongoDB.Bson.Serialization.Conventions;
-using MongoDB.Driver;
+using Adramelech.Models;
+using Adramelech.Utilities;
+using Postgrest;
 using Serilog;
+using Supabase.Interfaces;
+using Supabase.Realtime;
 
 namespace Adramelech.Services;
 
 public class DatabaseService
 {
-    private readonly MongoClient? _client;
-    private readonly IMongoDatabase? _adramelechDb;
-    private readonly IMongoDatabase? _generalDb;
-    private readonly IMongoCollection<ConfigSchema> _config;
-    public readonly IMongoCollection<MusicSchema> Music;
+    public readonly Supabase.Client Client;
+    private readonly ISupabaseTable<ConfigModel, RealtimeChannel> _config;
+    public readonly ISupabaseTable<FileModel, RealtimeChannel> Files;
 
     public DatabaseService()
     {
-        // Register camelCase convention for MongoDB
-        var camelCaseConvention = new ConventionPack { new CamelCaseElementNameConvention() };
-        ConventionRegistry.Register("camelCase", camelCaseConvention, _ => true);
+        var url = Environment.GetEnvironmentVariable("SUPABASE_URL");
+        if (string.IsNullOrEmpty(url))
+            throw new Exception("SUPABASE_URL environment variable is not set.");
+        var key = Environment.GetEnvironmentVariable("SUPABASE_KEY");
+        if (string.IsNullOrEmpty(key))
+            throw new Exception("SUPABASE_KEY environment variable is not set.");
 
-        var connectionString = Environment.GetEnvironmentVariable("MONGODB_CONNECTION_STRING");
-        if (string.IsNullOrEmpty(connectionString))
-            throw new Exception("MONGODB_CONNECTION_STRING environment variable is not set.");
+        Client = new Supabase.Client(url, key);
 
-        var settings = MongoClientSettings.FromConnectionString(connectionString);
-        settings.ServerApi = new ServerApi(ServerApiVersion.V1);
+        if (ErrorUtils.Try(Client.InitializeAsync().Wait) is { Success: false } init)
+            throw new Exception("Failed to initialize Supabase client.", init.Exception);
 
-#if DEBUG
-        // Workaround for my shitty computer
-        settings.AllowInsecureTls = true;
-#endif
+        _config = Client.From<ConfigModel>();
+        Files = Client.From<FileModel>();
 
-        // Using a try catch here because a lot of things can go wrong and I don't want to deal with them (basically my life)
-        try
-        {
-            _client = new MongoClient(settings);
-            _adramelechDb = _client.GetDatabase("adramelech");
-            _generalDb = _client.GetDatabase("general");
-            _config = _adramelechDb.GetCollection<ConfigSchema>("config");
-            Music = _generalDb.GetCollection<MusicSchema>("music");
-        }
-        catch (Exception e)
-        {
-            throw new Exception("Failed to connect to MongoDB.", e);
-        }
-
-        Log.Debug("Opened database connection, Database: {Database}", _adramelechDb.DatabaseNamespace.DatabaseName);
-        Log.Debug("Opened database connection, Database: {Database}", _generalDb.DatabaseNamespace.DatabaseName);
+        Log.Debug("Database service initialized.");
     }
 
-    public Result<List<ConfigSchema>> GetConfig(string key)
+    public async Task<Result<ConfigModel?>> GetConfigAsync(string key)
     {
-        try
-        {
-            var filter = Builders<ConfigSchema>.Filter.Eq(schema => schema.Key, key);
-            var result = _config.Find(filter);
-            return result.ToList();
-        }
-        catch (Exception e)
-        {
-            return e;
-        }
-    }
-
-    public async Task<Result<List<ConfigSchema>>> GetConfigAsync(string key)
-    {
-        try
-        {
-            var filter = Builders<ConfigSchema>.Filter.Eq(schema => schema.Key, key);
-            var result = _config.Find(filter);
-            return await result.ToListAsync();
-        }
-        catch (Exception e)
-        {
-            return e;
-        }
+        var result = await ErrorUtils.TryAsync(() => _config.Where(x => x.Key == key).Single());
+        return result.Success ? result.Value : new Exception("Failed to get config.", result.Exception);
     }
 
     public async Task<Result<bool>> ConfigExistsAsync(string key)
     {
-        try
-        {
-            var filter = Builders<ConfigSchema>.Filter.Eq(schema => schema.Key, key);
-            var result = await _config.FindAsync(filter);
-            return await result.AnyAsync();
-        }
-        catch (Exception e)
-        {
-            return e;
-        }
+        var result = await ErrorUtils.TryAsync(() => _config.Where(x => x.Key == key).Single());
+        return result.Success
+            ? result.Value is not null
+            : new Exception("Failed to get config.", result.Exception);
     }
 
-    public async Task<Result> InsertConfigAsync(ConfigSchema config)
+    public async Task<Result> InsertConfigAsync(ConfigModel config)
+    {
+        var result = await ErrorUtils.TryAsync(() => _config.Insert(config));
+        return result.Success ? true : new Exception("Failed to insert config.", result.Exception);
+    }
+
+    public async Task<Result<ConfigModel>> UpdateConfigAsync(ConfigModel config)
     {
         try
         {
-            await _config.InsertOneAsync(config);
-            return true;
+            var model = await _config.Where(x => x.Key == config.Key).Single();
+            if (model is null)
+                throw new Exception("Failed to get config.");
+
+            var result = await _config.Update(config);
+            return result.Model ?? throw new Exception("Failed to update config.");
         }
         catch (Exception e)
         {
-            return e;
+            return new Exception("Failed to update config.", e);
         }
     }
 
-    public async Task<Result<UpdateResult>> UpdateConfigAsync(ConfigSchema config, string? newKey = null)
+    public async Task<Result<ConfigModel>> UpsertConfigAsync(ConfigModel config)
     {
-        try
-        {
-            var filter = Builders<ConfigSchema>.Filter.Eq(schema => schema.Key, config.Key);
-            var update = Builders<ConfigSchema>.Update.Set(schema => schema.Value, config.Value);
-            if (newKey is not null)
-                update = update.Set(schema => schema.Key, newKey);
-            var result = await _config.UpdateOneAsync(filter, update);
-            return result;
-        }
-        catch (Exception e)
-        {
-            return e;
-        }
+        var result = await ErrorUtils.TryAsync(() => _config.Upsert(config, new QueryOptions { Upsert = true }));
+        return result.Success ? result.Value!.Model : new Exception("Failed to upsert config.", result.Exception);
     }
 
     public async Task<Result> DeleteConfigAsync(string key)
     {
-        try
-        {
-            var filter = Builders<ConfigSchema>.Filter.Eq(schema => schema.Key, key);
-            await _config.DeleteOneAsync(filter);
-            return true;
-        }
-        catch (Exception e)
-        {
-            return e;
-        }
+        var result = await ErrorUtils.TryAsync(() => _config.Where(x => x.Key == key).Delete());
+        return result.Success ? true : new Exception("Failed to delete config.", result.Exception);
     }
 }

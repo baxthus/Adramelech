@@ -22,6 +22,12 @@ public class Adramelech
 
     private async Task MainAsync()
     {
+#if DEBUG
+        // Load before anything else so we can use it in the DotEnv
+        // Cannot load before in normal occasions because of the Sentry DSN
+        Log.Logger = Loggers.Default;
+#endif
+
         DotEnv.Load();
 
         Log.Logger = Loggers.Default;
@@ -60,7 +66,7 @@ public class Adramelech
         .AddSingleton<InteractionHandler>()
         .AddSingleton<CommandHandler>()
         .AddSingleton<ReadyHandler>()
-        // Tools
+        // Others
         .AddSingleton<HttpWrapper>()
         .BuildServiceProvider();
 

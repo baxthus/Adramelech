@@ -13,7 +13,8 @@ public static class JsonUtils
         ContractResolver = new DefaultContractResolver
         {
             NamingStrategy = new CamelCaseNamingStrategy()
-        }
+        },
+        NullValueHandling = NullValueHandling.Ignore
     };
 
     /// <summary>
@@ -32,7 +33,8 @@ public static class JsonUtils
                 ContractResolver = new DefaultContractResolver
                 {
                     NamingStrategy = namingStrategy
-                }
+                },
+                NullValueHandling = NullValueHandling.Ignore
             }
         });
 

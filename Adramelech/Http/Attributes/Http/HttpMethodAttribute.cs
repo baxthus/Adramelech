@@ -1,4 +1,4 @@
-﻿namespace Adramelech.Http.Attributes;
+﻿namespace Adramelech.Http.Attributes.Http;
 
 [AttributeUsage(AttributeTargets.Method)]
 public abstract class HttpMethodAttribute(string? path) : Attribute
